@@ -39,7 +39,7 @@ class GeminiProvider {
     }
 
     const { count, difficulty, types, pageNumber, sectionTitle } = config;
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
 
     const prompt = `Generate exactly ${count} educational questions based ONLY on the provided text.
 Text source: Page ${pageNumber}, Section: "${sectionTitle}".
@@ -94,7 +94,7 @@ Source text content:
    * Generates an explanation for a given question
    */
   async generateExplanation(questionText, correctAnswer) {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
     const prompt = `Provide a concise, grounded explanation for why the answer "${correctAnswer}" is correct for this question:\n"${questionText}"`;
     const result = await model.generateContent(prompt);
     return result.response.text().trim();
