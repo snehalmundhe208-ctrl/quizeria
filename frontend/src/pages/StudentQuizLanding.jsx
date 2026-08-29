@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { 
   GraduationCap, 
   Clock, 
   HelpCircle, 
   Award, 
   AlertTriangle,
-  User,
-  Hash,
   ArrowRight,
   Loader2
 } from 'lucide-react';
@@ -15,18 +14,27 @@ import {
 const StudentQuizLanding = () => {
   const { shareCode } = useParams();
   const navigate = useNavigate();
+  const { user, token } = useAuth();
 
   const [quiz, setQuiz] = useState(null);
   const [questionsCount, setQuestionsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Student entries
-  const [name, setName] = useState('');
-  const [studentId, setStudentId] = useState('');
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
+    // 1. Enforce student authentication check first
+    if (!token || !user) {
+      navigate(`/student/login?quizLink=${shareCode}`);
+      return;
+    }
+
+    if (user.role !== 'STUDENT') {
+      setError('Please log in using a student account to attempt this quiz.');
+      setLoading(false);
+      return;
+    }
+
     const fetchQuizMetadata = async () => {
       try {
         const response = await fetch(`/api/public/quiz/${shareCode}`);
@@ -47,23 +55,19 @@ const StudentQuizLanding = () => {
     };
 
     fetchQuizMetadata();
-  }, [shareCode]);
+  }, [shareCode, token, user, navigate]);
 
-  const handleStartQuiz = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-
+  const handleStartQuiz = async () => {
     setStarting(true);
     setError('');
 
     try {
       const response = await fetch(`/api/public/quiz/${shareCode}/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          studentId: studentId ? studentId.trim() : ""
-        })
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        }
       });
 
       const data = await response.json();
@@ -107,7 +111,7 @@ const StudentQuizLanding = () => {
           <div>
             <h3 className="text-lg font-bold text-white">Quiz Unavailable</h3>
             <p className="text-slate-400 text-xs mt-2 leading-relaxed">
-              This shared link is either inactive, fully expired, or does not exist. Please contact your educator for access.
+              {error || 'This shared link is either inactive, fully expired, or does not exist. Please contact your educator for access.'}
             </p>
           </div>
           <button 
@@ -122,7 +126,7 @@ const StudentQuizLanding = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 text-slate-100">
+    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 text-slate-100 font-sans">
       <div className="max-w-2xl mx-auto w-full space-y-8">
         
         {/* Logo and title */}
@@ -185,72 +189,54 @@ const StudentQuizLanding = () => {
             </div>
 
             {quiz.instructions && (
-              <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-850 border-slate-800 text-xs leading-relaxed text-slate-400">
+              <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800 text-xs leading-relaxed text-slate-400">
                 <span className="font-bold text-white block mb-1">Educator Notes:</span>
                 {quiz.instructions}
               </div>
             )}
           </div>
 
-          {/* Right Column: Entry Form */}
+          {/* Right Column: Entry Account Details */}
           <div className="flex flex-col justify-between space-y-6">
             <div>
-              <h3 className="text-md font-bold text-white">Student Registration</h3>
-              <p className="text-slate-500 text-xs mt-0.5">Enter credentials to proceed.</p>
+              <h3 className="text-md font-bold text-white">Student Account</h3>
+              <p className="text-slate-500 text-xs mt-0.5">Attempting as registered student.</p>
             </div>
 
-            <form onSubmit={handleStartQuiz} className="space-y-5">
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-400 uppercase">Full Name *</label>
-                <div className="relative rounded-md shadow-sm mt-1">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4.5 w-4.5 text-slate-500" />
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    placeholder="Rahul Sharma"
-                  />
-                </div>
+            <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-800 text-xs space-y-2.5">
+              <div>
+                <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">Name:</span>
+                <span className="text-slate-200 font-semibold">{user?.name}</span>
               </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-400 uppercase">Student ID / Roll No (Optional)</label>
-                <div className="relative rounded-md shadow-sm mt-1">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Hash className="h-4.5 w-4.5 text-slate-500" />
-                  </div>
-                  <input
-                    type="text"
-                    value={studentId}
-                    onChange={(e) => setStudentId(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    placeholder="2026CS45"
-                  />
-                </div>
+              <div>
+                <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">Email:</span>
+                <span className="text-slate-200 font-mono">{user?.email}</span>
               </div>
+              {user?.studentId && (
+                <div>
+                  <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">Student ID:</span>
+                  <span className="text-slate-200 font-mono">{user?.studentId}</span>
+                </div>
+              )}
+            </div>
 
-              <button
-                type="submit"
-                disabled={starting || !name.trim()}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50"
-              >
-                {starting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Initializing assessment...
-                  </>
-                ) : (
-                  <>
-                    Start Assessment
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-            </form>
+            <button
+              onClick={handleStartQuiz}
+              disabled={starting}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            >
+              {starting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Initializing assessment...
+                </>
+              ) : (
+                <>
+                  Start Assessment
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
           </div>
 
         </div>

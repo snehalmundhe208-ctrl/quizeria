@@ -201,10 +201,13 @@ const cleanupStaleAttempts = async (userId) => {
 exports.startAttempt = async (req, res) => {
   try {
     const { shareCode } = req.params;
-    const { name, studentId } = req.body;
 
-    if (!name || !name.trim()) {
-      return res.status(400).json({ error: 'Student name is required.' });
+    const student = await prisma.student.findUnique({
+      where: { id: req.user.id }
+    });
+
+    if (!student) {
+      return res.status(403).json({ error: 'Only registered students can take quizzes.' });
     }
 
     const link = await prisma.shareLink.findFirst({
@@ -230,24 +233,6 @@ exports.startAttempt = async (req, res) => {
     }
 
     const quiz = link.quiz;
-
-    let student = await prisma.student.findUnique({
-      where: {
-        name_studentId: {
-          name: name.trim(),
-          studentId: studentId ? studentId.trim() : ""
-        }
-      }
-    });
-
-    if (!student) {
-      student = await prisma.student.create({
-        data: {
-          name: name.trim(),
-          studentId: studentId ? studentId.trim() : ""
-        }
-      });
-    }
 
     // Enforce limits
     const pastAttemptsCount = await prisma.attempt.count({
@@ -350,6 +335,10 @@ exports.saveAnswers = async (req, res) => {
       return res.status(404).json({ error: 'Active attempt not found.' });
     }
 
+    if (attempt.studentId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized to save answers for this attempt.' });
+    }
+
     const now = new Date();
     const timeLimitMs = attempt.quiz.timeLimit * 60 * 1000;
     const isExpired = now.getTime() > (attempt.startTime.getTime() + timeLimitMs + 10000);
@@ -401,6 +390,10 @@ exports.submitAttempt = async (req, res) => {
 
     if (!attempt || attempt.status !== 'STARTED') {
       return res.status(404).json({ error: 'Active attempt not found.' });
+    }
+
+    if (attempt.studentId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized to submit this attempt.' });
     }
 
     const now = new Date();
@@ -476,6 +469,10 @@ exports.getAttemptResult = async (req, res) => {
       return res.status(404).json({ error: 'Attempt result not available.' });
     }
 
+    if (attempt.studentId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized to view this attempt result.' });
+    }
+
     const quiz = attempt.quiz;
     const revealAnswers = quiz.revealAnswersAfterSubmission;
 
@@ -549,6 +546,10 @@ exports.loadAttemptAnswers = async (req, res) => {
 
     if (!attempt || attempt.status !== 'STARTED') {
       return res.status(404).json({ error: 'Active attempt not found.' });
+    }
+
+    if (attempt.studentId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized to load answers for this attempt.' });
     }
 
     const answers = await prisma.attemptAnswer.findMany({
@@ -887,3 +888,29 @@ exports.getQuizAnalytics = async (req, res) => {
 };
 
 exports.cleanupStaleAttempts = cleanupStaleAttempts;
+
+/**
+ * Fetch authenticated student's history of quiz attempts
+ */
+exports.getMyAttempts = async (req, res) => {
+  try {
+    const attempts = await prisma.attempt.findMany({
+      where: { studentId: req.user.id },
+      include: {
+        quiz: {
+          select: {
+            title: true,
+            timeLimit: true,
+            passingPercentage: true
+          }
+        }
+      },
+      orderBy: { startTime: 'desc' }
+    });
+
+    res.json({ attempts });
+  } catch (error) {
+    console.error('Get my attempts error:', error);
+    res.status(500).json({ error: 'Failed to retrieve your attempts history.' });
+  }
+};

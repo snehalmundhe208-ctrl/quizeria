@@ -36,13 +36,18 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, [token]);
 
-  const login = async (username, password) => {
-    const response = await fetch('/api/auth/login', {
+  const login = async (username, password, portal = 'admin') => {
+    // For students, username corresponds to their email input
+    const payload = portal === 'student' 
+      ? { email: username, password }
+      : { username, password };
+
+    const response = await fetch(`/api/auth/${portal}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();
@@ -56,13 +61,13 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   };
 
-  const register = async (username, password, role = 'ADMIN') => {
-    const response = await fetch('/api/auth/register', {
+  const register = async (payload, portal = 'teacher') => {
+    const response = await fetch(`/api/auth/${portal}/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username, password, role })
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();

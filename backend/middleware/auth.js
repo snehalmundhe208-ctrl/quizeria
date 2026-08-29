@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'studyforge_secret_key_jwt_2026_authentication';
+
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
   let token = null;
@@ -13,8 +15,9 @@ const authMiddleware = (req, res, next) => {
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
   }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'studyforge_secret_key_jwt_2026_authentication');
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
@@ -23,10 +26,29 @@ const authMiddleware = (req, res, next) => {
 };
 
 const adminMiddleware = (req, res, next) => {
-  if (!req.user || (req.user.role !== 'ADMIN' && req.user.role !== 'TEACHER')) {
+  if (!req.user || req.user.role !== 'ADMIN') {
     return res.status(403).json({ error: 'Access forbidden. Admin role required.' });
   }
   next();
 };
 
-module.exports = { authMiddleware, adminMiddleware };
+const teacherMiddleware = (req, res, next) => {
+  if (!req.user || (req.user.role !== 'TEACHER' && req.user.role !== 'ADMIN')) {
+    return res.status(403).json({ error: 'Access forbidden. Teacher or Admin role required.' });
+  }
+  next();
+};
+
+const studentMiddleware = (req, res, next) => {
+  if (!req.user || req.user.role !== 'STUDENT') {
+    return res.status(403).json({ error: 'Access forbidden. Student role required.' });
+  }
+  next();
+};
+
+module.exports = { 
+  authMiddleware, 
+  adminMiddleware, 
+  teacherMiddleware, 
+  studentMiddleware 
+};

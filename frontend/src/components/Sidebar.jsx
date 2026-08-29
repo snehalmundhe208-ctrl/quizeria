@@ -10,7 +10,8 @@ import {
   BarChart3, 
   Settings, 
   LogOut,
-  GraduationCap
+  GraduationCap,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,6 +27,7 @@ const Sidebar = () => {
     { name: 'Question Papers', path: '/question-papers', icon: Printer },
     { name: 'Attempts', path: '/attempts', icon: FileSpreadsheet },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
+    ...(user?.role === 'ADMIN' ? [{ name: 'Teachers', path: '/admin/teachers', icon: Users }] : []),
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 

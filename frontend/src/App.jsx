@@ -2,8 +2,13 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import AdminLogin from './pages/AdminLogin';
+import TeacherLogin from './pages/TeacherLogin';
+import TeacherRegister from './pages/TeacherRegister';
+import StudentLogin from './pages/StudentLogin';
+import StudentRegister from './pages/StudentRegister';
+import StudentAttempts from './pages/StudentAttempts';
+import TeachersManagement from './pages/TeachersManagement';
 import Dashboard from './pages/Dashboard';
 import Placeholder from './pages/Placeholder';
 import Landing from './pages/Landing';
@@ -64,10 +69,15 @@ const AppContent = () => {
   return (
     <Routes>
       {/* Public Auth Routes */}
-      <Route path="/login" element={!user ? <Login /> : <Navigate to="/" replace />} />
-      <Route path="/register" element={!user ? <Register /> : <Navigate to="/" replace />} />
+      <Route path="/admin/login" element={!user ? <AdminLogin /> : <Navigate to="/" replace />} />
+      <Route path="/teacher/login" element={!user ? <TeacherLogin /> : <Navigate to="/" replace />} />
+      <Route path="/teacher/register" element={!user ? <TeacherRegister /> : <Navigate to="/" replace />} />
+      <Route path="/student/login" element={!user ? <StudentLogin /> : <Navigate to="/" replace />} />
+      <Route path="/student/register" element={!user ? <StudentRegister /> : <Navigate to="/" replace />} />
+      <Route path="/login" element={<Navigate to="/teacher/login" replace />} />
+      <Route path="/register" element={<Navigate to="/teacher/register" replace />} />
 
-      {/* Protected Admin Routes */}
+      {/* Protected Admin/Teacher Routes */}
       <Route path="/" element={<HomeRoute />} />
       <Route path="/documents" element={<PrivateRoute><Documents /></PrivateRoute>} />
       <Route path="/questions" element={<PrivateRoute><Questions /></PrivateRoute>} />
@@ -76,6 +86,10 @@ const AppContent = () => {
       <Route path="/attempts" element={<PrivateRoute><Attempts /></PrivateRoute>} />
       <Route path="/analytics" element={<PrivateRoute><Analytics /></PrivateRoute>} />
       <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+      <Route path="/admin/teachers" element={<PrivateRoute><TeachersManagement /></PrivateRoute>} />
+
+      {/* Public Student Assessment Routes */}
+      <Route path="/student/attempts" element={<StudentAttempts />} />
 
       {/* Public Student Assessment Routes */}
       <Route path="/quiz/:shareCode" element={<StudentQuizLanding />} />
