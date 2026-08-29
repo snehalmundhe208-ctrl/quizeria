@@ -987,7 +987,7 @@ const Documents = () => {
   );
 };
 
-const StatusBadge = ({ status, onRetry }) => {
+const StatusBadge = ({ status, failureReason, onRetry }) => {
   if (status === 'UPLOADED') {
     return (
       <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold bg-blue-950 text-blue-400 border border-blue-900/30">
@@ -1011,17 +1011,28 @@ const StatusBadge = ({ status, onRetry }) => {
       </span>
     );
   }
+  // FAILED state — show badge + reason + retry button
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold bg-red-950 text-red-400 border border-red-900/30">
-      <AlertCircle className="h-3 w-3" />
-      Failed
-      <button 
-        onClick={onRetry} 
-        className="ml-1 text-red-300 underline hover:text-white transition-colors"
+    <div className="space-y-1">
+      <span
+        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold bg-red-950 text-red-400 border border-red-900/30"
+        title={failureReason || 'Processing failed'}
       >
-        Retry
-      </button>
-    </span>
+        <AlertCircle className="h-3 w-3" />
+        Failed
+        <button
+          onClick={onRetry}
+          className="ml-1 text-red-300 underline hover:text-white transition-colors"
+        >
+          Retry
+        </button>
+      </span>
+      {failureReason && (
+        <p className="text-xs text-red-400/70 max-w-xs leading-relaxed" title={failureReason}>
+          {failureReason.length > 80 ? failureReason.substring(0, 80) + '…' : failureReason}
+        </p>
+      )}
+    </div>
   );
 };
 
