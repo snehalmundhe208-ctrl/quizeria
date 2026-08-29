@@ -10,6 +10,7 @@ generator client {
 enum Role {
   ADMIN
   TEACHER
+  STUDENT
 }
 
 enum DocStatus {
@@ -59,6 +60,7 @@ model User {
   username       String          @unique
   passwordHash   String
   role           Role            @default(ADMIN)
+  isActive       Boolean         @default(true)
   createdAt      DateTime        @default(now())
   documents      Document[]
   quizzes        Quiz[]
@@ -164,13 +166,13 @@ model ShareLink {
 }
 
 model Student {
-  id         String    @id @default(uuid())
-  name       String
-  studentId  String?   // optional roll number or student ID
-  createdAt  DateTime  @default(now())
-  attempts   Attempt[]
-
-  @@unique([name, studentId]) // Ensure identifier combination is unique
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  studentId    String?   @unique // optional roll number or student ID
+  createdAt    DateTime  @default(now())
+  attempts     Attempt[]
 }
 
 model Attempt {

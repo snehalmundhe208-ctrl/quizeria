@@ -1,3 +1,59 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #f8fafc;
+    color: #334155;
+  }
+}
+
+@layer utilities {
+  /* Set default text-white utility to resolve to dark slate in light mode */
+  .text-white {
+    color: #0f172a !important;
+  }
+  
+  /* Preserve actual white color inside colored buttons, icons, or badges */
+  .bg-indigo-600,
+  .bg-indigo-600 *,
+  .bg-indigo-650,
+  .bg-indigo-650 *,
+  .bg-indigo-700,
+  .bg-indigo-700 *,
+  .bg-emerald-600,
+  .bg-emerald-600 *,
+  .bg-emerald-700,
+  .bg-emerald-700 *,
+  .bg-red-650,
+  .bg-red-650 *,
+  .bg-red-600,
+  .bg-red-600 *,
+  .bg-amber-600,
+  .bg-amber-600 *,
+  button.text-white,
+  button.text-white *,
+  button.bg-indigo-600,
+  button.bg-indigo-600 *,
+  button.bg-indigo-650,
+  button.bg-indigo-650 *,
+  button.bg-indigo-700,
+  button.bg-indigo-700 *,
+  a.bg-indigo-600,
+  a.bg-indigo-600 *,
+  a.bg-indigo-650,
+  a.bg-indigo-650 *,
+  .badge,
+  .text-white-force {
+    color: #ffffff !important;
+  }
+
+  /* Add border styling corrections for light mode */
+  .border-slate-800 {
+    border-color: #e2e8f0 !important;
+  }
+  .border-slate-850 {
+    border-color: #f1f5f9 !important;
+  }
+}

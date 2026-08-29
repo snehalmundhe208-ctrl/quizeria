@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Placeholder from './pages/Placeholder';
+import Landing from './pages/Landing';
 import Settings from './pages/Settings';
 import QuestionPapers from './pages/QuestionPapers';
 import Quizzes from './pages/Quizzes';
@@ -49,6 +50,14 @@ const PrivateRoute = ({ children }) => {
   return <Layout>{children}</Layout>;
 };
 
+const HomeRoute = () => {
+  const { user } = useAuth();
+  if (!user) {
+    return <Landing />;
+  }
+  return <PrivateRoute><Dashboard /></PrivateRoute>;
+};
+
 const AppContent = () => {
   const { user } = useAuth();
   
@@ -59,7 +68,7 @@ const AppContent = () => {
       <Route path="/register" element={!user ? <Register /> : <Navigate to="/" replace />} />
 
       {/* Protected Admin Routes */}
-      <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+      <Route path="/" element={<HomeRoute />} />
       <Route path="/documents" element={<PrivateRoute><Documents /></PrivateRoute>} />
       <Route path="/questions" element={<PrivateRoute><Questions /></PrivateRoute>} />
       <Route path="/quizzes" element={<PrivateRoute><Quizzes /></PrivateRoute>} />
