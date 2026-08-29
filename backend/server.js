@@ -63,6 +63,31 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error occurred.' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
+
+// Friendly error if port is already in use (avoids raw EADDRINUSE stack trace)
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ Port ${PORT} is already in use — stop the other running instance first.`);
+    console.error(`   Run: netstat -ano | findstr :${PORT}  then  taskkill /f /pid <PID>\n`);
+    process.exit(1);
+  } else {
+    throw err;
+  }
+});
+
+// Graceful shutdown on SIGINT (Ctrl+C) and SIGTERM (process manager)
+const shutdown = (signal) => {
+  console.log(`\n🛑 Received ${signal}. Closing server gracefully...`);
+  server.close(() => {
+    console.log('✅ Server closed. Goodbye.');
+    process.exit(0);
+  });
+  // Force-kill after 5s if connections are still open
+  setTimeout(() => process.exit(1), 5000).unref();
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));

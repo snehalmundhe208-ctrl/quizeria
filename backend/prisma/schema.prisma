@@ -77,6 +77,7 @@ model Document {
   pageCount      Int             @default(0)
   extractedText  String?         @db.Text
   insights       Json?           // Topic list, keywords, formulas, difficulty estimate
+  failureReason  String?         @db.Text // Populated when status = FAILED, shown to user
   createdAt      DateTime        @default(now())
   userId         String
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)

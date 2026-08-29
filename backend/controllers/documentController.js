@@ -58,10 +58,10 @@ exports.processDocument = async (req, res) => {
       return res.status(400).json({ error: 'Document is already being processed.' });
     }
 
-    // Set status to processing and return early
+    // Set status to processing, clear any previous failure reason
     await prisma.document.update({
       where: { id },
-      data: { status: 'PROCESSING' }
+      data: { status: 'PROCESSING', failureReason: null }
     });
 
     // Run processing pipeline in background
@@ -80,6 +80,17 @@ exports.processDocument = async (req, res) => {
 };
 
 /**
+ * Sanitize extracted text: strip null bytes and other characters PostgreSQL TEXT
+ * columns reject (notably \x00 which causes error code 22021).
+ */
+const sanitizeText = (text) => {
+  if (!text) return '';
+  // Remove null bytes and other problematic control characters
+  // Keep newlines (\n), tabs (\t), carriage returns (\r) which are legitimate
+  return text.replace(/\x00/g, '').replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
+};
+
+/**
  * Pipeline helper
  */
 const runProcessingPipeline = async (documentId, filePath, fileType, originalName) => {
@@ -87,17 +98,23 @@ const runProcessingPipeline = async (documentId, filePath, fileType, originalNam
     // 1. Text extraction page by page
     const pages = await documentProcessor.extractTextPageByPage(filePath, fileType, originalName);
     const pageCount = pages.length;
-    const fullText = pages.map(p => p.text).join('\n');
+
+    // Sanitize each page's text to remove null bytes / invalid sequences
+    const sanitizedPages = pages.map(p => ({ ...p, text: sanitizeText(p.text) }));
+    const fullText = sanitizedPages.map(p => p.text).join('\n');
 
     if (!fullText.trim()) {
-      throw new Error("Empty document. No text content extracted.");
+      throw new Error("Empty document — no readable text could be extracted. The file may be a scanned image PDF or use an unsupported encoding.");
     }
 
     // 2. Analyze document for educational insights
     const insights = await documentProcessor.generateInsights(fullText);
 
-    // 3. Generate section-aware chunks
-    const chunks = documentProcessor.generateChunks(pages, documentId);
+    // 3. Generate section-aware chunks (using sanitized pages)
+    const chunks = documentProcessor.generateChunks(sanitizedPages, documentId);
+
+    // Sanitize chunk text too
+    const sanitizedChunks = chunks.map(c => ({ ...c, text: sanitizeText(c.text) }));
 
     // Save pages and chunks in a database transaction
     await prisma.$transaction(async (tx) => {
@@ -107,9 +124,9 @@ const runProcessingPipeline = async (documentId, filePath, fileType, originalNam
       });
 
       // Insert new chunks
-      if (chunks.length > 0) {
+      if (sanitizedChunks.length > 0) {
         await tx.documentChunk.createMany({
-          data: chunks
+          data: sanitizedChunks
         });
       }
 
@@ -120,17 +137,33 @@ const runProcessingPipeline = async (documentId, filePath, fileType, originalNam
           status: 'PROCESSED',
           pageCount,
           extractedText: fullText,
-          insights: insights
+          insights: insights,
+          failureReason: null  // clear any previous failure reason
         }
       });
     });
 
-    console.log(`Document ID ${documentId} processed successfully. Created ${chunks.length} chunks.`);
+    console.log(`Document ID ${documentId} processed successfully. Created ${sanitizedChunks.length} chunks.`);
   } catch (err) {
     console.error(`Error processing document ${documentId}:`, err);
+
+    // Build a clean, user-facing failure message (no internal stack details)
+    let failureReason = 'Processing failed due to an unexpected error.';
+    if (err.message) {
+      if (err.message.includes('invalid byte sequence') || err.message.includes('0x00')) {
+        failureReason = 'This file contains invalid or binary characters that could not be stored. Try re-saving the PDF with standard encoding and re-uploading.';
+      } else if (err.message.includes('Empty document')) {
+        failureReason = err.message;
+      } else if (err.message.includes('GEMINI') || err.message.includes('API') || err.message.includes('quota')) {
+        failureReason = 'AI insight generation failed (API error or quota exceeded). Try processing again in a few minutes.';
+      } else {
+        failureReason = `Processing error: ${err.message.substring(0, 300)}`;
+      }
+    }
+
     await prisma.document.update({
       where: { id: documentId },
-      data: { status: 'FAILED' }
+      data: { status: 'FAILED', failureReason }
     }).catch(e => console.error("Failed to update status to FAILED:", e));
   }
 };

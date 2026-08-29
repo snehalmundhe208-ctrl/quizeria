@@ -92,7 +92,7 @@ const Documents = () => {
           const data = await response.json();
           const doc = data.document;
 
-          setDocuments(prev => prev.map(d => d.id === id ? { ...d, status: doc.status, pageCount: doc.pageCount, _count: doc._count } : d));
+          setDocuments(prev => prev.map(d => d.id === id ? { ...d, status: doc.status, pageCount: doc.pageCount, failureReason: doc.failureReason, _count: doc._count } : d));
 
           if (doc.status === 'PROCESSED' || doc.status === 'FAILED') {
             clearInterval(pollingIntervals.current[id]);
@@ -381,7 +381,7 @@ const Documents = () => {
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-fit space-y-6">
               <div>
                 <h3 className="text-lg font-bold text-white">Upload Material</h3>
-                <p className="text-slate-400 text-xs mt-0.5">Supports PDF, DOCX, PPTX, or TXT up to 10MB.</p>
+                <p className="text-slate-400 text-xs mt-0.5">Supports PDF, DOCX, PPTX, or TXT up to 25MB.</p>
               </div>
 
               {error && (
@@ -506,7 +506,7 @@ const Documents = () => {
                             </div>
                           </td>
                           <td className="py-4">
-                            <StatusBadge status={doc.status} onRetry={() => triggerProcessing(doc.id)} />
+                            <StatusBadge status={doc.status} failureReason={doc.failureReason} onRetry={() => triggerProcessing(doc.id)} />
                           </td>
                           <td className="py-4 text-slate-300 font-mono">
                             {doc.status === 'PROCESSED' ? doc.pageCount : '-'}
