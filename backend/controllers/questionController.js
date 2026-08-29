@@ -31,9 +31,11 @@ exports.generateAIQuestions = async (req, res) => {
 
     const totalQuestionsRequested = parseInt(count, 10);
     const questionsToGenerate = [];
+    let apiErrorCount = 0;      // counts failures due to API/config issues
+    let validationDropCount = 0; // counts questions that generated OK but failed schema validation
+    let lastApiError = null;
 
     // Distribute questions across chunks
-    // We sample chunks to generate questions. If count > chunks.length, we wrap around.
     for (let i = 0; i < totalQuestionsRequested; i++) {
       const chunk = chunks[i % chunks.length];
       
@@ -44,7 +46,6 @@ exports.generateAIQuestions = async (req, res) => {
         questionDifficulty = diffs[Math.floor(Math.random() * diffs.length)];
       }
 
-      // Determine type
       const questionType = types[i % types.length];
 
       let generatedQ = null;
@@ -64,10 +65,7 @@ exports.generateAIQuestions = async (req, res) => {
           if (results && results.length > 0) {
             const candidate = results[0];
             
-            // Validate schema
             if (aiService.validateQuestion(candidate)) {
-              // String-based duplicate check against database existing questions
-              // (Known limitation: exact/insensitive string match for MVP, upgrade to embeddings similarity later)
               const normalizedText = candidate.questionText.trim().toLowerCase();
               
               const dbExists = await prisma.question.findFirst({
@@ -77,7 +75,6 @@ exports.generateAIQuestions = async (req, res) => {
                 }
               });
 
-              // Check duplicates in current batch
               const batchExists = questionsToGenerate.some(
                 q => q.questionText.trim().toLowerCase() === normalizedText
               );
@@ -94,10 +91,27 @@ exports.generateAIQuestions = async (req, res) => {
               }
             } else {
               console.log("Generated question failed schema validation. Retrying...");
+              validationDropCount++;
             }
           }
         } catch (err) {
-          console.error("Error generating question from chunk, retrying...", err);
+          // Distinguish API/config errors from transient errors
+          const isApiError = err.message && (
+            err.message.includes('API key') ||
+            err.message.includes('not configured') ||
+            err.message.includes('quota') ||
+            err.message.includes('PERMISSION_DENIED') ||
+            err.message.includes('API_KEY_INVALID')
+          );
+
+          if (isApiError) {
+            lastApiError = err.message;
+            apiErrorCount++;
+            console.error(`AI API error (question ${i + 1}):`, err.message);
+            break; // No point retrying if the key is missing/invalid
+          } else {
+            console.error("Error generating question from chunk, retrying...", err.message);
+          }
         }
         retries++;
       }
@@ -107,9 +121,22 @@ exports.generateAIQuestions = async (req, res) => {
       }
     }
 
+    // If every question failed due to an API/config error, return a proper error response
+    if (questionsToGenerate.length === 0 && apiErrorCount > 0) {
+      return res.status(503).json({
+        error: `AI service is unavailable: ${lastApiError || 'API key not configured'}. Please add a valid GEMINI_API_KEY to the server .env file and restart.`
+      });
+    }
+
+    // If we got some questions but some were silently dropped, include a warning
+    const warning = validationDropCount > 0
+      ? `${validationDropCount} AI-generated question(s) were dropped because they failed quality validation (e.g. duplicate options, bad answer format). The remaining ${questionsToGenerate.length} passed.`
+      : null;
+
     res.json({
       message: `Generated ${questionsToGenerate.length} questions for review.`,
-      questions: questionsToGenerate
+      questions: questionsToGenerate,
+      ...(warning && { warning })
     });
   } catch (error) {
     console.error('Question generation error:', error);

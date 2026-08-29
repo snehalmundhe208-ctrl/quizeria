@@ -244,6 +244,16 @@ const Documents = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to generate questions.');
 
+      // Show a warning in the UI if some questions were dropped by validation
+      if (data.warning) {
+        setError(`⚠️ ${data.warning}`);
+      }
+
+      // Don't navigate to review screen if we got zero questions
+      if (!data.questions || data.questions.length === 0) {
+        throw new Error('AI returned zero valid questions. The document content may be too short or the AI response failed validation. Try a different difficulty or question type.');
+      }
+
       setReviewQuestions(data.questions);
       setIsReviewing(true);
       setGeneratingDoc(null); // Close config modal
