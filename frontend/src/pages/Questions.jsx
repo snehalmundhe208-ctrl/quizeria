@@ -14,7 +14,8 @@ import {
   X,
   RefreshCw,
   SlidersHorizontal,
-  Bookmark
+  Bookmark,
+  Loader2
 } from 'lucide-react';
 
 const Questions = () => {

@@ -140,15 +140,15 @@ const Dashboard = () => {
           <div className="h-64 flex items-end gap-3 px-4 pt-8 pb-2">
             {/* Visual SVG Placeholder Chart representing grading distribution or attempt frequency */}
             <div className="w-full flex flex-col items-center gap-2">
-              <div className="w-full bg-slate-800 rounded-md h-40 relative flex items-end">
+              <div className="w-full bg-slate-950/50 border border-slate-800 rounded-xl h-40 relative flex items-end p-2">
                 <div className="w-[12%] mx-auto bg-indigo-500 rounded-t h-[20%]"></div>
                 <div className="w-[12%] mx-auto bg-indigo-500 rounded-t h-[45%]"></div>
                 <div className="w-[12%] mx-auto bg-indigo-500 rounded-t h-[75%]"></div>
-                <div className="w-[12%] mx-auto bg-indigo-600 rounded-t h-[90%]"></div>
+                <div className="w-[12%] mx-auto bg-indigo-650 rounded-t h-[90%]"></div>
                 <div className="w-[12%] mx-auto bg-indigo-500 rounded-t h-[60%]"></div>
                 <div className="w-[12%] mx-auto bg-indigo-500 rounded-t h-[35%]"></div>
               </div>
-              <span className="text-xs text-slate-500">Weekly Attempt Metrics</span>
+              <span className="text-xs text-slate-100 font-semibold">Weekly Attempt Metrics</span>
             </div>
           </div>
 
@@ -221,10 +221,10 @@ const Dashboard = () => {
 // Internal reusable KPI card component
 const StatCard = ({ title, value, icon: Icon, color, description }) => {
   const colorMap = {
-    indigo: 'bg-indigo-950/40 text-indigo-400 border-indigo-900/30',
-    cyan: 'bg-cyan-950/40 text-cyan-400 border-cyan-900/30',
-    emerald: 'bg-emerald-950/40 text-emerald-400 border-emerald-900/30',
-    violet: 'bg-purple-950/40 text-purple-400 border-purple-900/30'
+    indigo: 'bg-indigo-50 border-indigo-200 text-indigo-650',
+    cyan: 'bg-cyan-50 border-cyan-200 text-cyan-650',
+    emerald: 'bg-emerald-50 border-emerald-200 text-emerald-650',
+    violet: 'bg-purple-50 border-purple-200 text-purple-650'
   };
 
   return (

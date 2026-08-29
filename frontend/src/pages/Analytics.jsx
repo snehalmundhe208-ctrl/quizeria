@@ -241,8 +241,8 @@ const Analytics = () => {
 
 const MiniStat = ({ title, value, color, icon: Icon }) => {
   const colorMap = {
-    indigo: 'bg-indigo-950/20 border-indigo-900/35 text-indigo-400',
-    emerald: 'bg-emerald-950/20 border-emerald-900/35 text-emerald-400'
+    indigo: 'bg-indigo-50 border-indigo-200 text-indigo-650',
+    emerald: 'bg-emerald-50 border-emerald-200 text-emerald-650'
   };
 
   return (

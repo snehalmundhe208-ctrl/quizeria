@@ -49,7 +49,11 @@ const PrivateRoute = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/teacher/login" replace />;
+  }
+
+  if (user.role === 'STUDENT') {
+    return <Navigate to="/student/attempts" replace />;
   }
 
   return <Layout>{children}</Layout>;
@@ -59,6 +63,9 @@ const HomeRoute = () => {
   const { user } = useAuth();
   if (!user) {
     return <Landing />;
+  }
+  if (user.role === 'STUDENT') {
+    return <Navigate to="/student/attempts" replace />;
   }
   return <PrivateRoute><Dashboard /></PrivateRoute>;
 };
