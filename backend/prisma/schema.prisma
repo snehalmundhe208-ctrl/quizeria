@@ -1,0 +1,239 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+}
+
+enum DocStatus {
+  UPLOADED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum DocType {
+  PDF
+  DOCX
+  PPTX
+  TXT
+}
+
+enum QuestionType {
+  MCQ
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  MIXED
+}
+
+enum QuizStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  CLOSED
+  EXPIRED
+}
+
+enum AttemptStatus {
+  STARTED
+  SUBMITTED
+  UNDER_REVIEW
+  COMPLETED
+}
+
+model User {
+  id             String          @id @default(uuid())
+  username       String          @unique
+  passwordHash   String
+  role           Role            @default(ADMIN)
+  createdAt      DateTime        @default(now())
+  documents      Document[]
+  quizzes        Quiz[]
+  questionPapers QuestionPaper[]
+}
+
+model Document {
+  id             String          @id @default(uuid())
+  name           String          // Display name (original file name)
+  systemFilename String          // Unique UUID-based file name on disk
+  type           DocType
+  path           String          // Disk storage path
+  status         DocStatus       @default(UPLOADED)
+  pageCount      Int             @default(0)
+  extractedText  String?         @db.Text
+  insights       Json?           // Topic list, keywords, formulas, difficulty estimate
+  createdAt      DateTime        @default(now())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chunks         DocumentChunk[]
+  questions      Question[]
+}
+
+model DocumentChunk {
+  id           String     @id @default(uuid())
+  documentId   String
+  document     Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  pageNumber   Int
+  sectionTitle String
+  chunkIndex   Int
+  text         String     @db.Text
+  createdAt    DateTime   @default(now())
+  questions    Question[]
+}
+
+model Question {
+  id                   String                 @id @default(uuid())
+  documentId           String
+  document             Document               @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunkId              String?
+  chunk                DocumentChunk?         @relation(fields: [chunkId], references: [id], onDelete: SetNull)
+  type                 QuestionType
+  questionText         String                 @db.Text
+  options              Json?                  // Array of string options for MCQ, null otherwise
+  correctAnswer        String                 // Standardized representation: "0"-"3" for MCQ, "true"/"false" for T/F, or keywords/reference text for short answer
+  explanation          String?                @db.Text
+  difficulty           Difficulty
+  topic                String
+  sourcePage           Int?
+  sourceSection        String?
+  createdAt            DateTime               @default(now())
+  quizQuestions        QuizQuestion[]
+  attemptAnswers       AttemptAnswer[]
+  paperQuestions       QuestionPaperQuestion[]
+
+  @@index([documentId])
+  @@index([topic])
+}
+
+model Quiz {
+  id                            String         @id @default(uuid())
+  title                         String
+  description                   String?        @db.Text
+  instructions                  String?        @db.Text
+  timeLimit                     Int            // in minutes
+  passingPercentage             Float
+  attemptsAllowed               Int            @default(1)
+  negativeMarking               Float          @default(0.0) // deduction per wrong answer
+  randomizeQuestions            Boolean        @default(false)
+  randomizeOptions              Boolean        @default(false)
+  showResultImmediately         Boolean        @default(true)
+  revealAnswersAfterSubmission  Boolean        @default(true)
+  status                        QuizStatus     @default(DRAFT)
+  createdAt                     DateTime       @default(now())
+  userId                        String
+  user                          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizQuestions                 QuizQuestion[]
+  shareLinks                    ShareLink[]
+  attempts                      Attempt[]
+}
+
+model QuizQuestion {
+  id         String   @id @default(uuid())
+  quizId     String
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  marks      Float    @default(1.0)
+  sortOrder  Int      @default(0)
+
+  @@unique([quizId, questionId])
+}
+
+model ShareLink {
+  id          String    @id @default(uuid())
+  quizId      String
+  quiz        Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  shareCode   String    @unique
+  maxAttempts Int       @default(0) // 0 means unlimited
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}
+
+model Student {
+  id         String    @id @default(uuid())
+  name       String
+  studentId  String?   // optional roll number or student ID
+  createdAt  DateTime  @default(now())
+  attempts   Attempt[]
+
+  @@unique([name, studentId]) // Ensure identifier combination is unique
+}
+
+model Attempt {
+  id              String          @id @default(uuid())
+  quizId          String
+  quiz            Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  startTime       DateTime        @default(now())
+  submitTime      DateTime?
+  score           Float           @default(0.0)
+  percentage      Float           @default(0.0)
+  passed          Boolean         @default(false)
+  durationSeconds Int             @default(0)
+  status          AttemptStatus   @default(STARTED)
+  createdAt       DateTime        @default(now())
+  answers         AttemptAnswer[]
+
+  @@index([quizId])
+  @@index([studentId])
+}
+
+model AttemptAnswer {
+  id            String   @id @default(uuid())
+  attemptId     String
+  attempt       Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer        String   // Selected answer stored as string: e.g. "2" for MCQ index, "true" for True/False, or raw text for short answer
+  isCorrect     Boolean? // Nullable for short answers until graded, true/false otherwise
+  marksObtained Float?   // Nullable for short answers until graded, Float otherwise
+  reviewed      Boolean  @default(false) // Flags manual review completion for short answers
+  createdAt     DateTime @default(now())
+
+  @@unique([attemptId, questionId])
+  @@index([questionId])
+  @@index([attemptId])
+}
+
+model QuestionPaper {
+  id              String                  @id @default(uuid())
+  title           String
+  subject         String
+  durationMinutes Int
+  totalMarks      Float
+  instructions    String?                 @db.Text
+  blueprint       Json                    // Difficulty weights, Topic weights, Sections mapping
+  sections        Json                    // Sections configuration schema
+  createdAt       DateTime                @default(now())
+  userId          String
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions       QuestionPaperQuestion[]
+}
+
+model QuestionPaperQuestion {
+  id              String        @id @default(uuid())
+  questionPaperId String
+  questionPaper   QuestionPaper @relation(fields: [questionPaperId], references: [id], onDelete: Cascade)
+  questionId      String
+  question      Question      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  sectionId       String        // Section classification (e.g., "A", "B", "C")
+  marks           Float
+  sortOrder       Int           @default(0)
+
+  @@unique([questionPaperId, questionId])
+}
