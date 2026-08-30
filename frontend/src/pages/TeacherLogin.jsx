@@ -102,14 +102,7 @@ const TeacherLogin = () => {
             </button>
           </form>
 
-          <div className="mt-6 border-t border-slate-800 pt-4 text-center">
-            <p className="text-xs text-slate-500">
-              New here?{' '}
-              <Link to="/teacher/register" className="font-bold text-indigo-400 hover:text-indigo-300">
-                Register as Teacher
-              </Link>
-            </p>
-          </div>
+          {/* Registration link removed by Admin Policy */}
         </div>
       </div>
     </div>

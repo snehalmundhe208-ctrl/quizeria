@@ -59,9 +59,9 @@ const Landing = () => {
           Digest textbooks, lecture slides, notes, or scanned PDFs. StudyForge AI parses semantic page structure, extracts educational study insights, and compiles secure online quizzes and printable academic exam papers.
         </p>
 
-        <div className="flex flex-wrap justify-center gap-4 pt-2">
+        <div className="flex flex-col items-center gap-3 pt-2">
           <button
-            onClick={() => navigate('/register')}
+            onClick={() => navigate('/student/register')}
             className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow transition-colors"
           >
             Get Started Free
@@ -69,10 +69,10 @@ const Landing = () => {
           </button>
           
           <button
-            onClick={() => navigate('/login')}
-            className="px-6 py-3 border-2 border-indigo-600 hover:bg-indigo-50 text-indigo-600 text-sm font-bold rounded-lg transition-all bg-white"
+            onClick={() => navigate('/student/login')}
+            className="text-xs text-slate-400 hover:text-indigo-600 transition-colors font-medium mt-1"
           >
-            Educator Login
+            Already have an account? Log in as Student
           </button>
         </div>
 

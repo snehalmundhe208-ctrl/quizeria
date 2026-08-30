@@ -94,11 +94,11 @@ const AppContent = () => {
       {/* Public Auth Routes */}
       <Route path="/admin/login" element={!user ? <AdminLogin /> : <Navigate to="/" replace />} />
       <Route path="/teacher/login" element={!user ? <TeacherLogin /> : <Navigate to="/" replace />} />
-      <Route path="/teacher/register" element={!user ? <TeacherRegister /> : <Navigate to="/" replace />} />
+      <Route path="/teacher/register" element={<Navigate to="/teacher/login" replace />} />
       <Route path="/student/login" element={!user ? <StudentLogin /> : <Navigate to="/" replace />} />
       <Route path="/student/register" element={!user ? <StudentRegister /> : <Navigate to="/" replace />} />
       <Route path="/login" element={<Navigate to="/teacher/login" replace />} />
-      <Route path="/register" element={<Navigate to="/teacher/register" replace />} />
+      <Route path="/register" element={<Navigate to="/student/register" replace />} />
 
       {/* Root redirect */}
       <Route path="/" element={<HomeRoute />} />

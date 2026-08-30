@@ -72,24 +72,24 @@ For local development and testing, access the separate login portals using these
 * **URL**: `/admin/login`
 * **Username**: `admin`
 * **Password**: `admin123`
-* **Role Capabilities**: List registered educators, inspect usage, and deactivate/activate teacher accounts.
+* **Role Capabilities**: Platform-wide metrics dashboard, register/provision new teacher credentials, and activate/deactivate teacher accounts.
 
 ### 2. Teacher Portal
-* **URL**: `/teacher/login` (Registration at `/teacher/register`)
+* **URL**: `/teacher/login` (Admin provisions accounts; no public self-registration)
 * **Email/Username**: `teacher@school.edu`
 * **Password**: `password123`
-* **Role Capabilities**: Upload study materials (PDF/DOCX/PPTX/TXT), generate and manage the AI Question Bank, publish quizzes with shareable codes, generate printable PDF Question Papers (student sheets and admin keys), and review short-answer submissions.
+* **Role Capabilities**: Upload study materials (PDF/DOCX/PPTX/TXT), generate and manage the AI Question Bank (powered by `gemini-3.6-flash`), publish quizzes with shareable codes, generate printable PDF Question Papers, and review submissions.
 
 ### 3. Student Portal
 * **URL**: `/student/login` (Registration at `/student/register`)
 * **Email**: `student@school.edu`
 * **Password**: `password123`
-* **Role Capabilities**: Enroll in shared quizzes, attempt exams under timed conditions, review score report cards, and track historical results on the **My Attempts** dashboard.
+* **Role Capabilities**: Enroll in shared quizzes, attempt exams under timed conditions, review score cards, and track results on the **My Attempts** dashboard.
 
 ---
 
 ## 🛡️ Portals & Access Control
 
-* **Admin Portal** (`/admin/login`): Restricted to accounts with `ADMIN` privileges. Non-admins are redirected back to the homepage.
-* **Teacher Portal** (`/teacher/login`): Scopes all uploaded documents, question papers, and analytics to the logged-in teacher's account.
-* **Student Portal** (`/student/login`): Restricts students from viewing or accessing administrative dashboards. Any attempt to access `/questions`, `/documents`, or other educator panels automatically redirects the student session to `/student/attempts`.
+* **Admin Portal** (`/admin/login`): Restricted to accounts with `ADMIN` privileges. Seeded via database configuration. Allows creation, list, and status-toggle deactivation of teacher accounts.
+* **Teacher Portal** (`/teacher/login`): Restricted to accounts created by the Administrator. Scopes all uploaded documents, quizzes, and analytics to the logged-in teacher.
+* **Student Portal** (`/student/login`): Public self-registration allowed. Restricts students from viewing or accessing administrative dashboards. Any attempt to access `/questions`, `/documents`, or other educator panels automatically redirects the student session to `/student/dashboard`.
