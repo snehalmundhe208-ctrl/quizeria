@@ -4,16 +4,78 @@ const attemptController = require('./attemptController');
 exports.getStats = async (req, res) => {
   try {
     const userId = req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
 
-    // Trigger cleanup of stale attempts on stats read
+    if (isAdmin) {
+      const teachersCount = await prisma.user.count({ where: { role: 'TEACHER' } });
+      const studentsCount = await prisma.student.count();
+      const documentsCount = await prisma.document.count();
+      const quizzesCount = await prisma.quiz.count();
+      const papersCount = await prisma.questionPaper.count();
+      const publishedQuizzes = await prisma.quiz.count({ where: { status: 'PUBLISHED' } });
+
+      const attempts = await prisma.attempt.findMany({
+        select: { percentage: true }
+      });
+      const totalAttempts = attempts.length;
+      const averageScore = totalAttempts > 0
+        ? (attempts.reduce((sum, a) => sum + a.percentage, 0) / totalAttempts).toFixed(1)
+        : 0;
+
+      // Admin recent activity
+      const recentTeachers = await prisma.user.findMany({
+        where: { role: 'TEACHER' },
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      });
+
+      const recentAttempts = await prisma.attempt.findMany({
+        where: { status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'COMPLETED'] } },
+        orderBy: { submitTime: 'desc' },
+        take: 5,
+        include: {
+          student: { select: { name: true } },
+          quiz: { select: { title: true } }
+        }
+      });
+
+      const activities = [
+        ...recentTeachers.map(t => ({
+          id: t.id,
+          type: 'teacher',
+          message: `New teacher registered: "${t.username}"`,
+          date: t.createdAt
+        })),
+        ...recentAttempts.map(att => ({
+          id: att.id,
+          type: 'attempt',
+          message: `Student "${att.student.name}" submitted "${att.quiz.title}"`,
+          date: att.submitTime || att.createdAt
+        }))
+      ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+      return res.json({
+        stats: {
+          totalTeachers: teachersCount,
+          totalStudents: studentsCount,
+          totalDocuments: documentsCount,
+          totalQuizzes: quizzesCount,
+          totalQuestionPapers: papersCount,
+          totalAttempts,
+          averageScore: Number(averageScore),
+          publishedAssessments: publishedQuizzes,
+        },
+        recentActivity: activities
+      });
+    }
+
+    // Teacher-scoped stats
     await attemptController.cleanupStaleAttempts(userId).catch(e => console.error(e));
 
-    // 1. Get counts
     const documentsCount = await prisma.document.count({ where: { userId } });
     const quizzesCount = await prisma.quiz.count({ where: { userId } });
     const papersCount = await prisma.questionPaper.count({ where: { userId } });
 
-    // 2. Attempts owned by this user's quizzes
     const attempts = await prisma.attempt.findMany({
       where: {
         quiz: { userId }

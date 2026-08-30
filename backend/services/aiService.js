@@ -38,13 +38,14 @@ class GeminiProvider {
       throw new Error("Gemini API key is not configured.");
     }
 
-    const { count, difficulty, types, pageNumber, sectionTitle } = config;
+    const { count, difficulty, types = ['MCQ'], pageNumber, sectionTitle } = config;
+    const finalTypes = Array.isArray(types) ? types : [types];
     const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
 
     const prompt = `Generate exactly ${count} educational questions based ONLY on the provided text.
 Text source: Page ${pageNumber}, Section: "${sectionTitle}".
 Difficulty target: ${difficulty} (use EASY, MEDIUM, or HARD for each question).
-Types to include: ${types.join(', ')} (select from MCQ, TRUE_FALSE, SHORT_ANSWER).
+Types to include: ${finalTypes.join(', ')} (select from MCQ, TRUE_FALSE, SHORT_ANSWER).
 
 Rules:
 1. For MCQ, generate exactly 4 options. options array must have 4 unique strings. correctAnswer must be a string representation of the index: "0", "1", "2", or "3".

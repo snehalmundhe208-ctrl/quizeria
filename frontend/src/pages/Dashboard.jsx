@@ -10,12 +10,13 @@ import {
   Plus, 
   Clock, 
   ChevronRight,
-  Sparkles
+  Sparkles,
+  GraduationCap
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [stats, setStats] = useState(null);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +67,25 @@ const Dashboard = () => {
     );
   }
 
+  const getActivityStyle = (type) => {
+    if (type === 'teacher') {
+      return {
+        bg: 'bg-emerald-50 border border-emerald-200 text-emerald-650',
+        icon: Users
+      };
+    }
+    if (type === 'document') {
+      return {
+        bg: 'bg-indigo-50 border border-indigo-200 text-indigo-650',
+        icon: FileText
+      };
+    }
+    return {
+      bg: 'bg-cyan-50 border border-cyan-200 text-cyan-650',
+      icon: HelpCircle
+    };
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 text-slate-100">
       {/* Top Header Row */}
@@ -79,13 +99,23 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            to="/documents"
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-900/10 transition-all"
-          >
-            <Plus className="h-4 w-4" />
-            Upload Document
-          </Link>
+          {user?.role === 'ADMIN' ? (
+            <Link
+              to="/admin/teachers"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-900/10 transition-all"
+            >
+              <Users className="h-4.5 w-4.5" />
+              Manage Teachers
+            </Link>
+          ) : (
+            <Link
+              to="/documents"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-900/10 transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              Upload Document
+            </Link>
+          )}
         </div>
       </div>
 
@@ -97,34 +127,69 @@ const Dashboard = () => {
 
       {/* Main KPI Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Documents" 
-          value={stats?.totalDocuments || 0} 
-          icon={FileText} 
-          color="indigo" 
-          description="Uploaded lectures & notes"
-        />
-        <StatCard 
-          title="AI Quizzes" 
-          value={stats?.totalQuizzes || 0} 
-          icon={HelpCircle} 
-          color="cyan" 
-          description={`${stats?.publishedAssessments || 0} published assessments`}
-        />
-        <StatCard 
-          title="Question Papers" 
-          value={stats?.totalQuestionPapers || 0} 
-          icon={Printer} 
-          color="emerald" 
-          description="Structured printable exams"
-        />
-        <StatCard 
-          title="Average Score" 
-          value={`${stats?.averageScore || 0}%`} 
-          icon={TrendingUp} 
-          color="violet" 
-          description={`From ${stats?.totalAttempts || 0} total submissions`}
-        />
+        {user?.role === 'ADMIN' ? (
+          <>
+            <StatCard 
+              title="Total Teachers" 
+              value={stats?.totalTeachers || 0} 
+              icon={Users} 
+              color="indigo" 
+              description="Registered educators"
+            />
+            <StatCard 
+              title="Total Students" 
+              value={stats?.totalStudents || 0} 
+              icon={GraduationCap} 
+              color="cyan" 
+              description="Active quiz takers"
+            />
+            <StatCard 
+              title="Total Documents" 
+              value={stats?.totalDocuments || 0} 
+              icon={FileText} 
+              color="emerald" 
+              description="Uploaded raw materials"
+            />
+            <StatCard 
+              title="Average Score" 
+              value={`${stats?.averageScore || 0}%`} 
+              icon={TrendingUp} 
+              color="violet" 
+              description={`From ${stats?.totalAttempts || 0} total submissions`}
+            />
+          </>
+        ) : (
+          <>
+            <StatCard 
+              title="Total Documents" 
+              value={stats?.totalDocuments || 0} 
+              icon={FileText} 
+              color="indigo" 
+              description="Uploaded lectures & notes"
+            />
+            <StatCard 
+              title="AI Quizzes" 
+              value={stats?.totalQuizzes || 0} 
+              icon={HelpCircle} 
+              color="cyan" 
+              description={`${stats?.publishedAssessments || 0} published assessments`}
+            />
+            <StatCard 
+              title="Question Papers" 
+              value={stats?.totalQuestionPapers || 0} 
+              icon={Printer} 
+              color="emerald" 
+              description="Structured printable exams"
+            />
+            <StatCard 
+              title="Average Score" 
+              value={`${stats?.averageScore || 0}%`} 
+              icon={TrendingUp} 
+              color="violet" 
+              description={`From ${stats?.totalAttempts || 0} total submissions`}
+            />
+          </>
+        )}
       </div>
 
       {/* Layout Split: Left Main Charts/Insights, Right Activity Log */}
@@ -163,7 +228,7 @@ const Dashboard = () => {
             </div>
             <div>
               <p className="text-2xl font-bold text-emerald-400">
-                {stats?.totalAttempts > 0 ? ((stats.publishedAssessments / stats.totalQuizzes) * 100).toFixed(0) : 0}%
+                {stats?.totalQuizzes > 0 ? ((stats.publishedAssessments / stats.totalQuizzes) * 100).toFixed(0) : 0}%
               </p>
               <p className="text-xs text-slate-500 font-medium uppercase mt-1">Publish Ratio</p>
             </div>
@@ -182,34 +247,45 @@ const Dashboard = () => {
               <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
                 <Clock className="h-8 w-8 text-slate-600" />
                 <p className="text-sm font-medium text-slate-400">No activity yet</p>
-                <p className="text-xs text-slate-500">Your documents & quiz generation logs will appear here.</p>
+                <p className="text-xs text-slate-500 font-medium">System activity will appear here.</p>
               </div>
             ) : (
-              activities.map((act, index) => (
-                <div key={index} className="flex gap-3 items-start text-sm border-b border-slate-800/60 pb-3 last:border-b-0">
-                  <div className={`p-2 rounded-lg ${
-                    act.type === 'document' ? 'bg-indigo-950 text-indigo-400' : 'bg-cyan-950 text-cyan-400'
-                  }`}>
-                    {act.type === 'document' ? <FileText className="h-4 w-4" /> : <HelpCircle className="h-4 w-4" />}
+              activities.map((act, index) => {
+                const style = getActivityStyle(act.type);
+                const Icon = style.icon;
+                return (
+                  <div key={index} className="flex gap-3 items-start text-sm border-b border-slate-800/60 pb-3 last:border-b-0">
+                    <div className={`p-2 rounded-lg border ${style.bg}`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-200 font-medium truncate">{act.message}</p>
+                      <p className="text-slate-500 text-xs mt-1">
+                        {new Date(act.date).toLocaleDateString()} at {new Date(act.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-slate-200 font-medium truncate">{act.message}</p>
-                    <p className="text-slate-500 text-xs mt-1">
-                      {new Date(act.date).toLocaleDateString()} at {new Date(act.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
           {activities.length > 0 && (
-            <Link
-              to="/documents"
-              className="mt-6 flex items-center justify-center gap-1 text-xs text-indigo-400 font-semibold hover:text-indigo-300 transition-colors"
-            >
-              Manage study materials <ChevronRight className="h-3 w-3" />
-            </Link>
+            user?.role === 'ADMIN' ? (
+              <Link
+                to="/admin/teachers"
+                className="mt-6 flex items-center justify-center gap-1 text-xs text-indigo-400 font-semibold hover:text-indigo-300 transition-colors"
+              >
+                Manage educators roster <ChevronRight className="h-3 w-3" />
+              </Link>
+            ) : (
+              <Link
+                to="/documents"
+                className="mt-6 flex items-center justify-center gap-1 text-xs text-indigo-400 font-semibold hover:text-indigo-300 transition-colors"
+              >
+                Manage study materials <ChevronRight className="h-3 w-3" />
+              </Link>
+            )
           )}
         </div>
 

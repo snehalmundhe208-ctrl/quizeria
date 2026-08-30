@@ -19,17 +19,28 @@ const Sidebar = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  const navItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { name: 'Documents', path: '/documents', icon: FileText },
-    { name: 'Question Bank', path: '/questions', icon: Database },
-    { name: 'Quizzes', path: '/quizzes', icon: HelpCircle },
-    { name: 'Question Papers', path: '/question-papers', icon: Printer },
-    { name: 'Attempts', path: '/attempts', icon: FileSpreadsheet },
-    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-    ...(user?.role === 'ADMIN' ? [{ name: 'Teachers', path: '/admin/teachers', icon: Users }] : []),
-    { name: 'Settings', path: '/settings', icon: Settings },
-  ];
+  const getNavItems = () => {
+    if (user?.role === 'ADMIN') {
+      return [
+        { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+        { name: 'Teachers', path: '/admin/teachers', icon: Users },
+        { name: 'Settings', path: '/settings', icon: Settings },
+      ];
+    }
+    // Teacher/Educator items
+    return [
+      { name: 'Dashboard', path: '/teacher/dashboard', icon: LayoutDashboard },
+      { name: 'Documents', path: '/documents', icon: FileText },
+      { name: 'Question Bank', path: '/questions', icon: Database },
+      { name: 'Quizzes', path: '/quizzes', icon: HelpCircle },
+      { name: 'Question Papers', path: '/question-papers', icon: Printer },
+      { name: 'Attempts', path: '/attempts', icon: FileSpreadsheet },
+      { name: 'Analytics', path: '/analytics', icon: BarChart3 },
+      { name: 'Settings', path: '/settings', icon: Settings },
+    ];
+  };
+
+  const navItems = getNavItems();
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col h-screen sticky top-0 border-r border-slate-800">
