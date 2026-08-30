@@ -23,10 +23,6 @@ const StudentAttempts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Join a Quiz States
-  const [quizCodeInput, setQuizCodeInput] = useState('');
-  const [joinError, setJoinError] = useState('');
-
   const fetchAttempts = async () => {
     try {
       const response = await fetch('/api/public/attempts/my-attempts', {
@@ -55,31 +51,6 @@ const StudentAttempts = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
-  };
-
-  const handleJoinQuiz = (e) => {
-    e.preventDefault();
-    setJoinError('');
-    if (!quizCodeInput.trim()) return;
-
-    let code = quizCodeInput.trim();
-    try {
-      if (code.includes('/quiz/')) {
-        const parts = code.split('/quiz/');
-        if (parts.length > 1) {
-          code = parts[1].split('/')[0].split('?')[0];
-        }
-      }
-    } catch (err) {
-      // fallback to original input
-    }
-
-    if (!code) {
-      setJoinError('Could not parse a valid quiz code from your input.');
-      return;
-    }
-
-    navigate(`/quiz/${code}`);
   };
 
   const getStatusBadge = (status, passed) => {
@@ -122,25 +93,17 @@ const StudentAttempts = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-slate-950 p-8 text-slate-100 font-sans">
-      <div className="max-w-6xl mx-auto space-y-8">
-        
-        {/* Header Dashboard Nav */}
-        <div className="flex justify-between items-center bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-          <div className="flex items-center gap-3">
-            <GraduationCap className="h-10 w-10 text-indigo-400" />
-            <div>
-              <h1 className="text-2xl font-bold text-white">Student Dashboard</h1>
-              <p className="text-slate-400 text-xs mt-0.5">Logged in as {user?.name || user?.username}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-3 py-1.5 border border-slate-800 rounded-lg text-xs font-bold hover:bg-slate-800 hover:text-red-400 transition-colors"
-          >
-            <LogOut className="h-3.5 w-3.5" /> Logout
-          </button>
-        </div>
+    <div className="p-8 max-w-7xl mx-auto space-y-8 text-slate-100 min-h-screen">
+      
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+          Student Dashboard <GraduationCap className="h-7 w-7 text-indigo-400" />
+        </h1>
+        <p className="text-slate-400 text-sm mt-1">
+          Logged in as {user?.name || user?.username} — review your historical quiz scores and attempt reports.
+        </p>
+      </div>
 
         {/* Summary Stat Cards Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -175,37 +138,7 @@ const StudentAttempts = () => {
           </div>
         </div>
 
-        {/* Join a Quiz Section */}
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="space-y-1 text-left">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-indigo-400" /> Join a Quiz
-              </h3>
-              <p className="text-slate-400 text-xs">
-                Have a share code or full link from your teacher? Paste it here to start immediately.
-              </p>
-            </div>
-            <form onSubmit={handleJoinQuiz} className="w-full md:w-1/2 flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                placeholder="e.g. quiz_code or paste full link"
-                value={quizCodeInput}
-                onChange={(e) => setQuizCodeInput(e.target.value)}
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-200 focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 shrink-0"
-              >
-                Start Quiz <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            </form>
-          </div>
-          {joinError && (
-            <p className="text-red-400 text-xs font-semibold text-left">{joinError}</p>
-          )}
-        </div>
+
 
         {/* Content Board */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
@@ -288,7 +221,6 @@ const StudentAttempts = () => {
           )}
         </div>
 
-      </div>
     </div>
   );
 };

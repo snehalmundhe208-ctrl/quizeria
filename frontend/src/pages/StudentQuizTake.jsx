@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { 
   Clock, 
   ChevronLeft, 
@@ -17,6 +18,7 @@ import {
 const StudentQuizTake = () => {
   const { shareCode, attemptId } = useParams();
   const navigate = useNavigate();
+  const { token } = useAuth();
 
   const [quiz, setQuiz] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -36,6 +38,11 @@ const StudentQuizTake = () => {
   const expiresAtRef = useRef(null);
 
   useEffect(() => {
+    if (!token) {
+      navigate(`/student/login?quizLink=${shareCode}`);
+      return;
+    }
+
     const loadAttempt = async () => {
       try {
         // 1. Try restoring session config from sessionStorage
@@ -47,17 +54,33 @@ const StudentQuizTake = () => {
           const parsed = JSON.parse(cached);
           targetQuestions = parsed.questions;
           targetExpiresAt = new Date(parsed.expiresAt);
+        } else {
+          // Fallback: recover session configuration from DB active attempt start request
+          const startRes = await fetch(`/api/public/quiz/${shareCode}/start`, {
+            method: 'POST',
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json' 
+            }
+          });
+          if (startRes.ok) {
+            const startData = await startRes.json();
+            targetQuestions = startData.questions;
+            targetExpiresAt = new Date(startData.expiresAt);
+            sessionStorage.setItem(`attempt_${attemptId}`, JSON.stringify({
+              expiresAt: startData.expiresAt,
+              questions: startData.questions
+            }));
+          }
         }
 
         // 2. Fetch full details from public endpoint (includes active state checks)
-        // We call the start endpoint again with the same student details to retrieve synced configurations
         const response = await fetch(`/api/public/quiz/${shareCode}`);
         if (!response.ok) throw new Error('Failed to load quiz details.');
         const data = await response.json();
         setQuiz(data.quiz);
 
         if (targetQuestions.length === 0) {
-          // If not in cache, fallback query
           throw new Error('Attempt state missing. Please restart from landing page.');
         }
 
@@ -65,14 +88,11 @@ const StudentQuizTake = () => {
         expiresAtRef.current = targetExpiresAt;
 
         // 3. Load already saved progress from server (if resuming attempt)
-        // We can fetch from attempt results or perform start call to retrieve database saves
-        // For security, student answers are saved in attemptAnswers. We fetch them via our start endpoint
-        // Or simply ask the student to re-enter details. Since they have active session, we let start endpoint return it.
-        // Let's call start endpoint with a blank payload or load from localStorage.
-        // To be bulletproof, we fetch current answers from the server:
         const answersResponse = await fetch(`/api/public/attempts/${attemptId}/answers/load`, {
-          // We'll define this route to fetch answers securely for an active attempt
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json' 
+          }
         });
         if (answersResponse.ok) {
           const answersData = await answersResponse.json();
@@ -122,7 +142,10 @@ const StudentQuizTake = () => {
     try {
       const response = await fetch(`/api/public/attempts/${attemptId}/answers`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
           answers: [{ questionId: qId, answer: val }]
         })
@@ -166,7 +189,10 @@ const StudentQuizTake = () => {
     try {
       const response = await fetch(`/api/public/attempts/${attemptId}/submit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
           answers: Object.entries(answers).map(([key, val]) => ({
             questionId: key,
@@ -198,7 +224,10 @@ const StudentQuizTake = () => {
     try {
       const response = await fetch(`/api/public/attempts/${attemptId}/submit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
           answers: Object.entries(answers).map(([key, val]) => ({
             questionId: key,

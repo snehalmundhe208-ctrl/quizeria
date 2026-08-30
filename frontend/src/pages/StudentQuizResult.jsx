@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { 
   Award, 
   Clock, 
@@ -19,6 +20,7 @@ import {
 const StudentQuizResult = () => {
   const { attemptId } = useParams();
   const navigate = useNavigate();
+  const { token } = useAuth();
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,9 +30,19 @@ const StudentQuizResult = () => {
   const [expandedAnswers, setExpandedAnswers] = useState(new Set());
 
   useEffect(() => {
+    if (!token) {
+      navigate('/student/login');
+      return;
+    }
+
     const fetchResults = async () => {
       try {
-        const response = await fetch(`/api/public/attempts/${attemptId}/result`);
+        const response = await fetch(`/api/public/attempts/${attemptId}/result`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to fetch results.');
         setResult(data);
@@ -43,7 +55,7 @@ const StudentQuizResult = () => {
     };
 
     fetchResults();
-  }, [attemptId]);
+  }, [attemptId, token]);
 
   const toggleExpand = (qId) => {
     setExpandedAnswers(prev => {

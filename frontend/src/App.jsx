@@ -22,6 +22,7 @@ import StudentQuizTake from './pages/StudentQuizTake';
 import StudentQuizResult from './pages/StudentQuizResult';
 import Attempts from './pages/Attempts';
 import Analytics from './pages/Analytics';
+import StudentJoinQuiz from './pages/StudentJoinQuiz';
 
 const Layout = ({ children }) => {
   return (
@@ -60,10 +61,6 @@ const RoleRoute = ({ children, allowedRoles }) => {
     if (user.role === 'TEACHER') return <Navigate to="/teacher/dashboard" replace />;
     if (user.role === 'STUDENT') return <Navigate to="/student/dashboard" replace />;
     return <Navigate to="/" replace />;
-  }
-
-  if (user.role === 'STUDENT') {
-    return children;
   }
 
   return <Layout>{children}</Layout>;
@@ -121,6 +118,7 @@ const AppContent = () => {
 
       {/* Student Dashboard */}
       <Route path="/student/dashboard" element={<RoleRoute allowedRoles={['STUDENT']}><StudentAttempts /></RoleRoute>} />
+      <Route path="/student/join" element={<RoleRoute allowedRoles={['STUDENT']}><StudentJoinQuiz /></RoleRoute>} />
       <Route path="/student/attempts" element={<Navigate to="/student/dashboard" replace />} />
 
       {/* Public Student Assessment Routes */}

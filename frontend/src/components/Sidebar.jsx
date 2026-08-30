@@ -27,6 +27,12 @@ const Sidebar = () => {
         { name: 'Settings', path: '/settings', icon: Settings },
       ];
     }
+    if (user?.role === 'STUDENT') {
+      return [
+        { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
+        { name: 'Join Quiz', path: '/student/join', icon: HelpCircle },
+      ];
+    }
     // Teacher/Educator items
     return [
       { name: 'Dashboard', path: '/teacher/dashboard', icon: LayoutDashboard },
