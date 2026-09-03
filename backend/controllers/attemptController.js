@@ -200,7 +200,7 @@ const cleanupStaleAttempts = async (userId) => {
  */
 exports.startAttempt = async (req, res) => {
   try {
-    const { shareCode } = req.params;
+    const shareCode = req.params.shareCode || req.body?.shareCode;
 
     const student = await prisma.student.findUnique({
       where: { id: req.user.id }
@@ -311,7 +311,7 @@ exports.startAttempt = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Start attempt error:', error);
+    console.error('Start attempt error details:', error);
     res.status(500).json({ error: 'Failed to start quiz attempt.' });
   }
 };
@@ -382,7 +382,7 @@ exports.saveAnswers = async (req, res) => {
  */
 exports.submitAttempt = async (req, res) => {
   try {
-    const { attemptId } = req.params;
+    const attemptId = req.params.attemptId || req.body?.attemptId;
     const { answers = [] } = req.body;
 
     const attempt = await prisma.attempt.findUnique({
@@ -406,7 +406,8 @@ exports.submitAttempt = async (req, res) => {
     if (!isExpiredPastGrace && answers.length > 0) {
       await prisma.$transaction(async (tx) => {
         for (const item of answers) {
-          if (!item.questionId || item.answer === undefined) continue;
+          const ansVal = item.answer !== undefined ? item.answer : item.studentAnswer;
+          if (!item.questionId || ansVal === undefined) continue;
           await tx.attemptAnswer.upsert({
             where: {
               attemptId_questionId: {
@@ -414,11 +415,11 @@ exports.submitAttempt = async (req, res) => {
                 questionId: item.questionId
               }
             },
-            update: { answer: String(item.answer) },
+            update: { answer: String(ansVal) },
             create: {
               attemptId,
               questionId: item.questionId,
-              answer: String(item.answer)
+              answer: String(ansVal)
             }
           });
         }

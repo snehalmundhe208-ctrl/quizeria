@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'studyforge_secret_key_jwt_2026_aut
  */
 exports.unifiedLogin = async (req, res) => {
   try {
-    const credential = req.body.username || req.body.email;
+    const credential = req.body.username || req.body.email || req.body.emailOrUsername;
     const { password } = req.body;
 
     if (!credential || !password) {

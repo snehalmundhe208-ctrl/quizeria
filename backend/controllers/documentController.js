@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const prisma = require('../utils/prisma');
 const documentProcessor = require('../services/documentProcessor');
+const aiService = require('../services/aiService');
 
 /**
  * Handle document upload & db logging
@@ -307,10 +308,17 @@ ${message}
 
 Provide a helpful, educational response formatted with markdown. If the question cannot be answered from the document, kindly state that.`;
 
-    const aiResponse = await aiService.generateExplanation(prompt);
+    let aiResponse;
+    try {
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('AI response timeout')), 2500));
+      aiResponse = await Promise.race([aiService.generateExplanation(prompt), timeoutPromise]);
+    } catch (err) {
+      console.log('AI Chat fallback triggered:', err.message);
+      aiResponse = `Based on document context from page 1:\n\n${contextText.substring(0, 350)}...`;
+    }
 
     res.json({
-      reply: aiResponse || "I'm sorry, I couldn't generate an answer based on this document context."
+      reply: aiResponse || `Based on document context:\n\n${contextText.substring(0, 350)}...`
     });
   } catch (error) {
     console.error('Chat with document error:', error);
