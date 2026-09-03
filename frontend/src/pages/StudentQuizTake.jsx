@@ -39,7 +39,7 @@ const StudentQuizTake = () => {
 
   useEffect(() => {
     if (!token) {
-      navigate(`/student/login?quizLink=${shareCode}`);
+      navigate(`/login?quizLink=${shareCode}`);
       return;
     }
 

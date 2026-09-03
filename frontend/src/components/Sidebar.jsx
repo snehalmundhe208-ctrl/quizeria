@@ -12,7 +12,8 @@ import {
   LogOut,
   GraduationCap,
   Users,
-  User
+  User,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -25,6 +26,7 @@ const Sidebar = () => {
       return [
         { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
         { name: 'Teachers', path: '/admin/teachers', icon: Users },
+        { name: 'Review Queue', path: '/review-queue', icon: ShieldCheck },
         { name: 'My Profile', path: '/profile', icon: User },
         { name: 'Settings', path: '/settings', icon: Settings },
       ];
@@ -41,7 +43,9 @@ const Sidebar = () => {
       { name: 'Dashboard', path: '/teacher/dashboard', icon: LayoutDashboard },
       { name: 'Documents', path: '/documents', icon: FileText },
       { name: 'Question Bank', path: '/questions', icon: Database },
+      { name: 'Review Queue', path: '/review-queue', icon: ShieldCheck },
       { name: 'Quizzes', path: '/quizzes', icon: HelpCircle },
+      { name: 'Classes & Rosters', path: '/classes', icon: Users },
       { name: 'Question Papers', path: '/question-papers', icon: Printer },
       { name: 'Attempts', path: '/attempts', icon: FileSpreadsheet },
       { name: 'Analytics', path: '/analytics', icon: BarChart3 },

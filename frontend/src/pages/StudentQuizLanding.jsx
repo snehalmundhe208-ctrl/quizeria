@@ -24,8 +24,8 @@ const StudentQuizLanding = () => {
 
   useEffect(() => {
     // 1. Enforce student authentication check first
-    if (!token || !user) {
-      navigate(`/student/login?quizLink=${shareCode}`);
+    if (!token) {
+      navigate(`/login?quizLink=${shareCode}`);
       return;
     }
 

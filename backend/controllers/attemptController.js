@@ -269,7 +269,9 @@ exports.startAttempt = async (req, res) => {
     const expiresAt = new Date(activeAttempt.startTime.getTime() + quiz.timeLimit * 60 * 1000);
 
     let quizQuestionsList = quiz.quizQuestions;
-    if (quiz.randomizeQuestions) {
+    if (quiz.useQuestionPool && quiz.poolSelectCount > 0 && quiz.poolSelectCount < quizQuestionsList.length) {
+      quizQuestionsList = shuffleArray(quizQuestionsList).slice(0, quiz.poolSelectCount);
+    } else if (quiz.randomizeQuestions) {
       quizQuestionsList = shuffleArray(quizQuestionsList);
     }
 

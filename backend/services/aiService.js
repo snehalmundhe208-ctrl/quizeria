@@ -1,7 +1,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const aiConfig = require('../config/aiConfig');
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(aiConfig.GEMINI_API_KEY);
 
 const responseSchema = {
   type: "object",
@@ -40,7 +40,7 @@ class GeminiProvider {
 
     const { count, difficulty, types = ['MCQ'], pageNumber, sectionTitle } = config;
     const finalTypes = Array.isArray(types) ? types : [types];
-    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+    const model = genAI.getGenerativeModel({ model: aiConfig.GEMINI_MODEL });
 
     const prompt = `Generate exactly ${count} educational questions based ONLY on the provided text.
 Text source: Page ${pageNumber}, Section: "${sectionTitle}".
@@ -95,7 +95,7 @@ Source text content:
    * Generates an explanation for a given question
    */
   async generateExplanation(questionText, correctAnswer) {
-    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+    const model = genAI.getGenerativeModel({ model: aiConfig.GEMINI_MODEL });
     const prompt = `Provide a concise, grounded explanation for why the answer "${correctAnswer}" is correct for this question:\n"${questionText}"`;
     const result = await model.generateContent(prompt);
     return result.response.text().trim();
@@ -136,6 +136,61 @@ Source text content:
     }
 
     return true;
+  }
+
+  /**
+   * Evaluates AI Question Quality score (0-100) and detects warnings
+   */
+  evaluateQuestionQuality(q) {
+    let score = 100;
+    const warnings = [];
+
+    if (!q.questionText || q.questionText.trim().length < 15) {
+      score -= 25;
+      warnings.push("Question text is very short or ambiguous.");
+    }
+
+    if (!q.explanation || q.explanation.trim().length < 20) {
+      score -= 15;
+      warnings.push("Explanation is minimal or missing.");
+    }
+
+    const type = (q.type || '').toUpperCase();
+    if (type === 'MCQ') {
+      if (!Array.isArray(q.options) || q.options.length !== 4) {
+        score -= 30;
+        warnings.push("MCQ must have exactly 4 options.");
+      } else {
+        const lengths = q.options.map(o => o.trim().length);
+        const minLen = Math.min(...lengths);
+        const maxLen = Math.max(...lengths);
+        if (minLen < 2) {
+          score -= 10;
+          warnings.push("One or more options are extremely short.");
+        }
+        if (maxLen > minLen * 4 && maxLen > 80) {
+          score -= 10;
+          warnings.push("Unbalanced option lengths (the correct answer may stand out).");
+        }
+      }
+    } else if (type === 'SHORT_ANSWER') {
+      if (!q.correctAnswer || q.correctAnswer.trim().length < 10) {
+        score -= 20;
+        warnings.push("Reference short answer could be more detailed.");
+      }
+    }
+
+    if (!q.sourcePage && !q.sourceSection) {
+      score -= 10;
+      warnings.push("Missing direct page/section grounding metadata.");
+    }
+
+    const finalScore = Math.max(40, Math.min(100, score));
+
+    return {
+      qualityScore: finalScore,
+      warnings
+    };
   }
 }
 

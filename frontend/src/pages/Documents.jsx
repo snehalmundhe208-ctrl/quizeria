@@ -18,8 +18,12 @@ import {
   FileMinus,
   Edit3,
   Check,
-  X
+  X,
+  MessageSquare
 } from 'lucide-react';
+
+import DocumentInsightsModal from '../components/DocumentInsightsModal';
+import DocumentChatModal from '../components/DocumentChatModal';
 
 const Documents = () => {
   const { token } = useAuth();
@@ -28,6 +32,8 @@ const Documents = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [insightsDocId, setInsightsDocId] = useState(null);
+  const [chatDoc, setChatDoc] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
@@ -529,6 +535,22 @@ const Documents = () => {
                               {doc.status === 'PROCESSED' && (
                                 <>
                                   <button
+                                    onClick={() => setInsightsDocId(doc.id)}
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950 text-indigo-300 border border-slate-800 hover:bg-slate-800 rounded-lg text-xs font-semibold transition-all"
+                                    title="AI Document Insights"
+                                  >
+                                    <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+                                    Insights
+                                  </button>
+                                  <button
+                                    onClick={() => setChatDoc(doc)}
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950 text-cyan-300 border border-slate-800 hover:bg-slate-800 rounded-lg text-xs font-semibold transition-all"
+                                    title="Chat with AI Assistant"
+                                  >
+                                    <MessageSquare className="h-3.5 w-3.5 text-cyan-400" />
+                                    Chat
+                                  </button>
+                                  <button
                                     onClick={() => setGeneratingDoc(doc)}
                                     className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-950 text-indigo-400 border border-indigo-900/35 hover:bg-indigo-900/40 rounded-lg text-xs font-semibold transition-all"
                                     title="Generate AI Questions"
@@ -993,6 +1015,21 @@ const Documents = () => {
           </div>
         </div>
       )}
+
+      {/* Document AI Insights Modal */}
+      <DocumentInsightsModal
+        isOpen={!!insightsDocId}
+        onClose={() => setInsightsDocId(null)}
+        documentId={insightsDocId}
+      />
+
+      {/* Document AI Chat Assistant Modal */}
+      <DocumentChatModal
+        isOpen={!!chatDoc}
+        onClose={() => setChatDoc(null)}
+        documentId={chatDoc?.id}
+        documentName={chatDoc?.name}
+      />
     </div>
   );
 };

@@ -4,11 +4,10 @@ const mammoth = require('mammoth');
 const officeParser = require('officeparser');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { GoogleAIFileManager } = require('@google/generative-ai/server');
+const aiConfig = require('../config/aiConfig');
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const fileManager = new GoogleAIFileManager(GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(aiConfig.GEMINI_API_KEY);
+const fileManager = new GoogleAIFileManager(aiConfig.GEMINI_API_KEY);
 
 /**
  * Main parser controller
@@ -135,7 +134,7 @@ const runGeminiOCR = async (filePath, originalName) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: aiConfig.GEMINI_MODEL });
     const prompt = `Transcribe this scanned PDF document page-by-page. Format the output as a valid JSON array of objects, where each object has fields "pageNumber" (integer) and "text" (string). Extract all headings, text blocks, and structured lists. Return ONLY raw JSON matching this schema, no markdown wrappers, backticks, or other text. Example: [{"pageNumber": 1, "text": "transcribed page content..."}]`;
 
     const result = await model.generateContent([
@@ -240,7 +239,7 @@ const generateChunks = (pages, documentId) => {
  * Extracts high-level curriculum insights (Topics, definitions, formulas)
  */
 const generateInsights = async (fullText) => {
-  if (!GEMINI_API_KEY) {
+  if (!aiConfig.GEMINI_API_KEY) {
     return {
       topics: [],
       concepts: [],
@@ -252,7 +251,7 @@ const generateInsights = async (fullText) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: aiConfig.GEMINI_MODEL });
     const textSample = fullText.slice(0, 50000); // Truncate text for prompt token safety
 
     const prompt = `Analyze this educational material and extract key study insights.

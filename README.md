@@ -64,32 +64,37 @@ npx prisma db seed
 
 ---
 
-## 🔑 Demo Accounts
+## 🔑 Unified Login & Demo Accounts
 
-For local development and testing, access the separate login portals using these mock credentials:
+All roles (Admin, Teacher, Student) log in from a single unified portal at **/login**. The system automatically detects the user's role upon authentication and redirects them to their respective dashboard:
 
-### 1. Administrator Portal
-* **URL**: `/admin/login`
-* **Username**: `admin`
-* **Password**: `admin123`
-* **Role Capabilities**: Platform-wide metrics dashboard, register/provision new teacher credentials, and activate/deactivate teacher accounts.
+* **Single Login URL**: `/login`
 
-### 2. Teacher Portal
-* **URL**: `/teacher/login` (Admin provisions accounts; no public self-registration)
-* **Email/Username**: `teacher@school.edu`
+### Demo Credentials:
+
+#### 1. Administrator Account
+* **Username/Email**: `Snehal`
+* **Password**: `Snehal20`
+* **Dashboard**: `/admin/dashboard`
+* **Role Capabilities**: Platform-wide metrics dashboard, manage teacher credentials, and activate/deactivate accounts.
+
+#### 2. Educator / Teacher Account
+* **Username/Email**: `teacher@school.edu`
 * **Password**: `password123`
-* **Role Capabilities**: Upload study materials (PDF/DOCX/PPTX/TXT), generate and manage the AI Question Bank (powered by `gemini-3.6-flash`), publish quizzes with shareable codes, generate printable PDF Question Papers, and review submissions.
+* **Dashboard**: `/teacher/dashboard`
+* **Role Capabilities**: Upload study materials (PDF/DOCX/PPTX/TXT), generate and manage the AI Question Bank, publish quizzes with shareable codes, generate printable PDF Question Papers, and review submissions.
 
-### 3. Student Portal
-* **URL**: `/student/login` (Registration at `/student/register`)
-* **Email**: `student@school.edu`
+#### 3. Student Account
+* **Username/Email**: `student@school.edu`
 * **Password**: `password123`
-* **Role Capabilities**: Enroll in shared quizzes, attempt exams under timed conditions, review score cards, and track results on the **My Attempts** dashboard.
+* **Dashboard**: `/student/dashboard` (Self-registration available at `/student/register`)
+* **Role Capabilities**: Enroll in shared quizzes, attempt exams under timed conditions, review score cards, and track historical results on the **My Attempts** dashboard.
 
 ---
 
 ## 🛡️ Portals & Access Control
 
-* **Admin Portal** (`/admin/login`): Restricted to accounts with `ADMIN` privileges. Seeded via database configuration. Allows creation, list, and status-toggle deactivation of teacher accounts.
-* **Teacher Portal** (`/teacher/login`): Restricted to accounts created by the Administrator. Scopes all uploaded documents, quizzes, and analytics to the logged-in teacher.
-* **Student Portal** (`/student/login`): Public self-registration allowed. Restricts students from viewing or accessing administrative dashboards. Any attempt to access `/questions`, `/documents`, or other educator panels automatically redirects the student session to `/student/dashboard`.
+* **Unified Portal** (`/login`): Accessible to all users. Authenticates credentials against the database, issues a role-embedded JWT token, and routes to the appropriate dashboard.
+* **Student Self-Registration** (`/student/register`): Allows students to create new accounts.
+* **Educator Account Creation**: Admin-only privilege via the `/admin/teachers` management page.
+* **Access Control**: Users are restricted to their authorized routes (`RoleRoute`). Students attempting to view educator pages (`/documents`, `/questions`, etc.) are redirected to `/student/dashboard`.

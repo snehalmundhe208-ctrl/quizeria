@@ -17,7 +17,10 @@ exports.createQuiz = async (req, res) => {
       randomizeQuestions = false,
       randomizeOptions = false,
       showResultImmediately = true,
-      revealAnswersAfterSubmission = true
+      revealAnswersAfterSubmission = true,
+      mode = 'EXAM',
+      useQuestionPool = false,
+      poolSelectCount = null
     } = req.body;
 
     if (!title || !timeLimit || !passingPercentage) {
@@ -37,6 +40,9 @@ exports.createQuiz = async (req, res) => {
         randomizeOptions,
         showResultImmediately,
         revealAnswersAfterSubmission,
+        mode: mode || 'EXAM',
+        useQuestionPool: Boolean(useQuestionPool),
+        poolSelectCount: poolSelectCount ? parseInt(poolSelectCount, 10) : null,
         status: 'DRAFT',
         userId: req.user.id
       }
@@ -152,6 +158,9 @@ exports.updateQuiz = async (req, res) => {
       randomizeOptions,
       showResultImmediately,
       revealAnswersAfterSubmission,
+      mode,
+      useQuestionPool,
+      poolSelectCount,
       status,
       questions // Array of { questionId, marks, sortOrder }
     } = req.body;
@@ -181,6 +190,9 @@ exports.updateQuiz = async (req, res) => {
           randomizeOptions: randomizeOptions !== undefined ? randomizeOptions : quiz.randomizeOptions,
           showResultImmediately: showResultImmediately !== undefined ? showResultImmediately : quiz.showResultImmediately,
           revealAnswersAfterSubmission: revealAnswersAfterSubmission !== undefined ? revealAnswersAfterSubmission : quiz.revealAnswersAfterSubmission,
+          mode: mode !== undefined ? mode : quiz.mode,
+          useQuestionPool: useQuestionPool !== undefined ? Boolean(useQuestionPool) : quiz.useQuestionPool,
+          poolSelectCount: poolSelectCount !== undefined ? (poolSelectCount ? parseInt(poolSelectCount, 10) : null) : quiz.poolSelectCount,
           status: status || quiz.status
         }
       });

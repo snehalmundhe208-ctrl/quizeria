@@ -42,7 +42,7 @@ const StudentAttempts = () => {
 
   useEffect(() => {
     if (!token) {
-      navigate('/student/login');
+      navigate('/login');
       return;
     }
     fetchAttempts();

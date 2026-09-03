@@ -14,7 +14,8 @@ import {
   ChevronUp,
   Loader2,
   BookmarkCheck,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 
 const StudentQuizResult = () => {
@@ -25,13 +26,14 @@ const StudentQuizResult = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [practiceLoading, setPracticeLoading] = useState(false);
   
   // Accordion state to collapse/expand single question reviews
   const [expandedAnswers, setExpandedAnswers] = useState(new Set());
 
   useEffect(() => {
     if (!token) {
-      navigate('/student/login');
+      navigate('/login');
       return;
     }
 
@@ -247,6 +249,38 @@ const StudentQuizResult = () => {
                 </div>
               ))}
             </div>
+
+            <button
+              onClick={async () => {
+                try {
+                  setPracticeLoading(true);
+                  const res = await fetch('/api/practice/weak-topics/generate', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ count: 10 })
+                  });
+                  const json = await res.json();
+                  if (!res.ok) throw new Error(json.error || 'Failed to generate practice quiz.');
+                  navigate(`/quiz/${json.shareCode}`);
+                } catch (err) {
+                  alert(err.message);
+                } finally {
+                  setPracticeLoading(false);
+                }
+              }}
+              disabled={practiceLoading}
+              className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md transition disabled:opacity-50"
+            >
+              {practiceLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 text-amber-300" />
+              )}
+              <span>Practice My Weak Topics</span>
+            </button>
           </div>
 
           {/* Question List Review (Collapsible Accordion layout) */}

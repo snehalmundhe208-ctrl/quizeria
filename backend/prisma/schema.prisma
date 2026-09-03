@@ -55,6 +55,13 @@ enum AttemptStatus {
   COMPLETED
 }
 
+enum QuestionStatus {
+  GENERATED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
 model User {
   id             String          @id @default(uuid())
   username       String          @unique
@@ -65,6 +72,9 @@ model User {
   documents      Document[]
   quizzes        Quiz[]
   questionPapers QuestionPaper[]
+  classes        Class[]
+  assignments    Assignment[]
+  activityLogs   ActivityLog[]
 }
 
 model Document {
@@ -112,6 +122,9 @@ model Question {
   topic                String
   sourcePage           Int?
   sourceSection        String?
+  status               QuestionStatus         @default(APPROVED)
+  qualityScore         Int?
+  qualityWarnings      Json?
   createdAt            DateTime               @default(now())
   quizQuestions        QuizQuestion[]
   attemptAnswers       AttemptAnswer[]
@@ -134,6 +147,9 @@ model Quiz {
   randomizeOptions              Boolean        @default(false)
   showResultImmediately         Boolean        @default(true)
   revealAnswersAfterSubmission  Boolean        @default(true)
+  mode                          String         @default("EXAM") // PRACTICE | EXAM | CHALLENGE | ASSIGNMENT
+  useQuestionPool               Boolean        @default(false)
+  poolSelectCount               Int?
   status                        QuizStatus     @default(DRAFT)
   createdAt                     DateTime       @default(now())
   userId                        String
@@ -141,6 +157,7 @@ model Quiz {
   quizQuestions                 QuizQuestion[]
   shareLinks                    ShareLink[]
   attempts                      Attempt[]
+  assignments                   Assignment[]
 }
 
 model QuizQuestion {
@@ -167,13 +184,15 @@ model ShareLink {
 }
 
 model Student {
-  id           String    @id @default(uuid())
+  id           String         @id @default(uuid())
   name         String
-  email        String    @unique
+  email        String         @unique
   passwordHash String
-  studentId    String?   @unique // optional roll number or student ID
-  createdAt    DateTime  @default(now())
+  studentId    String?        @unique // optional roll number or student ID
+  createdAt    DateTime       @default(now())
   attempts     Attempt[]
+  classes      ClassStudent[]
+  achievements Achievement[]
 }
 
 model Attempt {
@@ -233,10 +252,75 @@ model QuestionPaperQuestion {
   questionPaperId String
   questionPaper   QuestionPaper @relation(fields: [questionPaperId], references: [id], onDelete: Cascade)
   questionId      String
-  question      Question      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question        Question      @relation(fields: [questionId], references: [id], onDelete: Cascade)
   sectionId       String        // Section classification (e.g., "A", "B", "C")
   marks           Float
   sortOrder       Int           @default(0)
 
   @@unique([questionPaperId, questionId])
+}
+
+model Class {
+  id          String         @id @default(uuid())
+  name        String
+  subject     String?
+  code        String         @unique @default(uuid())
+  createdAt   DateTime       @default(now())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students    ClassStudent[]
+  assignments Assignment[]
+}
+
+model ClassStudent {
+  id        String   @id @default(uuid())
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, studentId])
+}
+
+model Assignment {
+  id        String   @id @default(uuid())
+  title     String
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  deadline  DateTime
+  status    String   @default("ACTIVE") // PENDING | ACTIVE | COMPLETED | OVERDUE
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  details   String?  @db.Text
+  createdAt DateTime @default(now())
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  badgeKey    String
+  unlockedAt  DateTime @default(now())
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  recipientId   String
+  recipientType String   // USER or STUDENT
+  title         String
+  message       String
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
 }

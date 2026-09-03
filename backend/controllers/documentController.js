@@ -220,6 +220,105 @@ exports.getDocumentById = async (req, res) => {
 };
 
 /**
+ * Get AI document insights
+ */
+exports.getDocumentInsights = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const document = await prisma.document.findFirst({
+      where: { id, userId: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        pageCount: true,
+        status: true,
+        insights: true,
+        failureReason: true,
+        createdAt: true,
+        _count: {
+          select: { chunks: true, questions: true }
+        }
+      }
+    });
+
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found.' });
+    }
+
+    res.json({
+      documentId: document.id,
+      name: document.name,
+      type: document.type,
+      status: document.status,
+      pageCount: document.pageCount,
+      chunkCount: document._count.chunks,
+      questionCount: document._count.questions,
+      insights: document.insights || {
+        topics: [],
+        concepts: [],
+        definitions: [],
+        formulas: [],
+        suggestedQuizTopics: [],
+        difficulty: "MEDIUM"
+      }
+    });
+  } catch (error) {
+    console.error('Get document insights error:', error);
+    res.status(500).json({ error: 'Failed to retrieve document insights.' });
+  }
+};
+
+/**
+ * AI Study Assistant — Q&A grounded in document text
+ */
+exports.chatWithDocument = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+
+    if (!message || message.trim().length === 0) {
+      return res.status(400).json({ error: 'Chat message is required.' });
+    }
+
+    const document = await prisma.document.findFirst({
+      where: { id, userId: req.user.id },
+      include: {
+        chunks: {
+          take: 5,
+          orderBy: { chunkIndex: 'asc' }
+        }
+      }
+    });
+
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found or unauthorized.' });
+    }
+
+    const contextText = document.chunks.map(c => c.text).join('\n\n').substring(0, 4000);
+
+    const prompt = `You are StudyForge AI Study Assistant. Answer the user's question clearly and concisely based ONLY on the provided document context.
+
+DOCUMENT CONTEXT:
+${contextText}
+
+USER QUESTION:
+${message}
+
+Provide a helpful, educational response formatted with markdown. If the question cannot be answered from the document, kindly state that.`;
+
+    const aiResponse = await aiService.generateExplanation(prompt);
+
+    res.json({
+      reply: aiResponse || "I'm sorry, I couldn't generate an answer based on this document context."
+    });
+  } catch (error) {
+    console.error('Chat with document error:', error);
+    res.status(500).json({ error: 'Failed to generate AI response.' });
+  }
+};
+
+/**
  * Delete document & associated files
  */
 exports.deleteDocument = async (req, res) => {

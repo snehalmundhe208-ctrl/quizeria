@@ -36,18 +36,13 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, [token]);
 
-  const login = async (username, password, portal = 'admin') => {
-    // For students, username corresponds to their email input
-    const payload = portal === 'student' 
-      ? { email: username, password }
-      : { username, password };
-
-    const response = await fetch(`/api/auth/${portal}/login`, {
+  const login = async (username, password) => {
+    const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ username, password })
     });
 
     const data = await response.json();

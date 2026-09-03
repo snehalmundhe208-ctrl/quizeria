@@ -12,6 +12,8 @@ const publicRoutes = require('./routes/publicRoutes');
 const paperRoutes = require('./routes/paperRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const practiceRoutes = require('./routes/practiceRoutes');
+const classRoutes = require('./routes/classRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -48,6 +50,8 @@ app.use('/api/public', publicRoutes);
 app.use('/api/papers', paperRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/practice', practiceRoutes);
+app.use('/api/classes', classRoutes);
 
 // Root test endpoint
 app.get('/', (req, res) => {

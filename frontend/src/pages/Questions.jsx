@@ -18,6 +18,8 @@ import {
   Loader2
 } from 'lucide-react';
 
+import SourceTraceabilityModal from '../components/SourceTraceabilityModal';
+
 const Questions = () => {
   const { token } = useAuth();
   
@@ -25,6 +27,7 @@ const Questions = () => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sourceQuestionId, setSourceQuestionId] = useState(null);
   
   // Filters
   const [selectedDocId, setSelectedDocId] = useState('');
@@ -389,7 +392,15 @@ const Questions = () => {
                   )}
 
                   {/* Actions Drawer */}
-                  <div className="flex justify-end gap-3 pt-3 border-t border-slate-800/40">
+                  <div className="flex justify-end items-center gap-3 pt-3 border-t border-slate-800/40">
+                    <button
+                      onClick={() => setSourceQuestionId(q.id)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-950 border border-slate-800 hover:bg-slate-800 rounded-lg text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+                      title="View Source Traceability"
+                    >
+                      <Bookmark className="h-3.5 w-3.5 text-emerald-400" />
+                      View Source
+                    </button>
                     <button
                       onClick={() => setPreviewingQuestion(q)}
                       className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
@@ -637,6 +648,13 @@ const Questions = () => {
           </div>
         </div>
       )}
+
+      {/* Source Traceability Modal */}
+      <SourceTraceabilityModal
+        isOpen={!!sourceQuestionId}
+        onClose={() => setSourceQuestionId(null)}
+        questionId={sourceQuestionId}
+      />
     </div>
   );
 };

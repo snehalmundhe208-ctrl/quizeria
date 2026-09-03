@@ -39,9 +39,9 @@ const Landing = () => {
 
         <button
           onClick={() => navigate('/login')}
-          className="px-4 py-2 border-2 border-indigo-650 text-indigo-650 text-xs font-bold rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition-colors bg-white text-indigo-600 border-indigo-600"
+          className="px-4 py-2 border-2 border-indigo-600 text-indigo-600 text-xs font-bold rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition-colors bg-white border-indigo-600"
         >
-          Educator Login
+          Log In
         </button>
       </header>
 
@@ -69,10 +69,10 @@ const Landing = () => {
           </button>
           
           <button
-            onClick={() => navigate('/student/login')}
+            onClick={() => navigate('/login')}
             className="text-xs text-slate-400 hover:text-indigo-600 transition-colors font-medium mt-1"
           >
-            Already have an account? Log in as Student
+            Already have an account? Log in
           </button>
         </div>
 

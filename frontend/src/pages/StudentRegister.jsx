@@ -171,10 +171,10 @@ const StudentRegister = () => {
             <p className="text-xs text-slate-500">
               Already have an account?{' '}
               <Link 
-                to={quizLink ? `/student/login?quizLink=${quizLink}` : "/student/login"} 
+                to={quizLink ? `/login?quizLink=${quizLink}` : "/login"} 
                 className="font-bold text-indigo-400 hover:text-indigo-300"
               >
-                Student Login
+                Log In
               </Link>
             </p>
           </div>

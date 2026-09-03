@@ -80,10 +80,13 @@ exports.generateAIQuestions = async (req, res) => {
               );
 
               if (!dbExists && !batchExists) {
+                const qualityEval = aiService.evaluateQuestionQuality(candidate);
                 generatedQ = {
                   ...candidate,
                   chunkId: chunk.id,
-                  documentId
+                  documentId,
+                  qualityScore: qualityEval.qualityScore,
+                  qualityWarnings: qualityEval.warnings
                 };
                 isValid = true;
               } else {
@@ -182,7 +185,10 @@ exports.bulkSaveQuestions = async (req, res) => {
             difficulty: diffEnum,
             topic: q.topic || 'General',
             sourcePage: q.sourcePage ? parseInt(q.sourcePage, 10) : null,
-            sourceSection: q.sourceSection || null
+            sourceSection: q.sourceSection || null,
+            status: q.status || 'APPROVED',
+            qualityScore: q.qualityScore !== undefined ? parseInt(q.qualityScore, 10) : null,
+            qualityWarnings: q.qualityWarnings || null
           }
         });
         saved.push(created);
@@ -363,5 +369,119 @@ exports.regenerateAIQuestion = async (req, res) => {
   } catch (error) {
     console.error('Regenerate question error:', error);
     res.status(500).json({ error: 'An error occurred while regenerating the question.' });
+  }
+};
+
+/**
+ * Retrieve source document chunk context for a question (Source Traceability)
+ */
+exports.getQuestionSource = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const question = await prisma.question.findFirst({
+      where: {
+        id,
+        document: { userId: req.user.id }
+      },
+      include: {
+        document: {
+          select: { id: true, name: true, type: true }
+        },
+        chunk: true
+      }
+    });
+
+    if (!question) {
+      return res.status(404).json({ error: 'Question not found or unauthorized.' });
+    }
+
+    res.json({
+      questionId: question.id,
+      questionText: question.questionText,
+      documentName: question.document ? question.document.name : 'Unknown Document',
+      documentId: question.documentId,
+      sourcePage: question.sourcePage || (question.chunk ? question.chunk.pageNumber : null),
+      sourceSection: question.sourceSection || (question.chunk ? question.chunk.sectionTitle : 'General Content'),
+      chunkIndex: question.chunk ? question.chunk.chunkIndex : null,
+      chunkText: question.chunk ? question.chunk.text : 'Source text chunk unavailable.'
+    });
+  } catch (error) {
+    console.error('Get question source error:', error);
+    res.status(500).json({ error: 'Failed to retrieve source context.' });
+  }
+};
+
+/**
+ * Retrieve questions in the Review Queue (UNDER_REVIEW or GENERATED status)
+ */
+exports.getReviewQueue = async (req, res) => {
+  try {
+    const questions = await prisma.question.findMany({
+      where: {
+        document: { userId: req.user.id },
+        status: { in: ['UNDER_REVIEW', 'GENERATED'] }
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        document: { select: { name: true } },
+        chunk: true
+      }
+    });
+
+    res.json({ questions });
+  } catch (error) {
+    console.error('Get review queue error:', error);
+    res.status(500).json({ error: 'Failed to retrieve review queue questions.' });
+  }
+};
+
+/**
+ * Approve questions (change status to APPROVED)
+ */
+exports.approveQuestions = async (req, res) => {
+  try {
+    const { questionIds } = req.body;
+    if (!Array.isArray(questionIds) || questionIds.length === 0) {
+      return res.status(400).json({ error: 'Missing questionIds array.' });
+    }
+
+    await prisma.question.updateMany({
+      where: {
+        id: { in: questionIds },
+        document: { userId: req.user.id }
+      },
+      data: { status: 'APPROVED' }
+    });
+
+    res.json({ message: `Approved ${questionIds.length} question(s) into the Question Bank.` });
+  } catch (error) {
+    console.error('Approve questions error:', error);
+    res.status(500).json({ error: 'Failed to approve questions.' });
+  }
+};
+
+/**
+ * Reject questions (change status to REJECTED)
+ */
+exports.rejectQuestions = async (req, res) => {
+  try {
+    const { questionIds } = req.body;
+    if (!Array.isArray(questionIds) || questionIds.length === 0) {
+      return res.status(400).json({ error: 'Missing questionIds array.' });
+    }
+
+    await prisma.question.updateMany({
+      where: {
+        id: { in: questionIds },
+        document: { userId: req.user.id }
+      },
+      data: { status: 'REJECTED' }
+    });
+
+    res.json({ message: `Rejected ${questionIds.length} question(s).` });
+  } catch (error) {
+    console.error('Reject questions error:', error);
+    res.status(500).json({ error: 'Failed to reject questions.' });
   }
 };

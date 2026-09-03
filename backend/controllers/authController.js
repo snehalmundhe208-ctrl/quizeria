@@ -5,6 +5,72 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'studyforge_secret_key_jwt_2026_authentication';
 
 /**
+ * Unified Login (detects ADMIN, TEACHER, or STUDENT)
+ */
+exports.unifiedLogin = async (req, res) => {
+  try {
+    const credential = req.body.username || req.body.email;
+    const { password } = req.body;
+
+    if (!credential || !password) {
+      return res.status(400).json({ error: 'Email/Username and password are required.' });
+    }
+
+    const trimmedCredential = credential.trim();
+
+    // 1. Check User table (ADMIN and TEACHER)
+    const user = await prisma.user.findUnique({ where: { username: trimmedCredential } });
+
+    if (user) {
+      if (!user.isActive) {
+        return res.status(403).json({ error: 'Account is deactivated. Please contact your administrator.' });
+      }
+
+      const match = await bcrypt.compare(password, user.passwordHash);
+      if (match) {
+        const token = jwt.sign(
+          { id: user.id, username: user.username, role: user.role },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          message: 'Login successful.',
+          token,
+          user: { id: user.id, username: user.username, role: user.role }
+        });
+      }
+    }
+
+    // 2. Check Student table (STUDENT)
+    const student = await prisma.student.findUnique({ where: { email: trimmedCredential } });
+
+    if (student) {
+      const match = await bcrypt.compare(password, student.passwordHash);
+      if (match) {
+        const token = jwt.sign(
+          { id: student.id, username: student.email, name: student.name, role: 'STUDENT' },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          message: 'Login successful.',
+          token,
+          user: { id: student.id, username: student.email, name: student.name, role: 'STUDENT' }
+        });
+      }
+    }
+
+    // 3. Fallback: Generic invalid credentials error
+    return res.status(401).json({ error: 'Invalid credentials.' });
+  } catch (error) {
+    console.error('Unified login error:', error);
+    res.status(500).json({ error: 'An error occurred during login.' });
+  }
+};
+
+/**
  * Admin Login
  */
 exports.adminLogin = async (req, res) => {

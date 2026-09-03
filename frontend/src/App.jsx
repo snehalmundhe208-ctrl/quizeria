@@ -2,10 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
-import AdminLogin from './pages/AdminLogin';
-import TeacherLogin from './pages/TeacherLogin';
-import TeacherRegister from './pages/TeacherRegister';
-import StudentLogin from './pages/StudentLogin';
+import Login from './pages/Login';
 import StudentRegister from './pages/StudentRegister';
 import StudentAttempts from './pages/StudentAttempts';
 import TeachersManagement from './pages/TeachersManagement';
@@ -24,6 +21,8 @@ import Attempts from './pages/Attempts';
 import Analytics from './pages/Analytics';
 import StudentJoinQuiz from './pages/StudentJoinQuiz';
 import Profile from './pages/Profile';
+import ReviewQueue from './pages/ReviewQueue';
+import Classes from './pages/Classes';
 
 const Layout = ({ children }) => {
   return (
@@ -51,10 +50,7 @@ const RoleRoute = ({ children, allowedRoles }) => {
   }
 
   if (!user) {
-    if (allowedRoles.includes('STUDENT')) {
-      return <Navigate to="/student/login" replace />;
-    }
-    return <Navigate to="/teacher/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (!allowedRoles.includes(user.role)) {
@@ -90,12 +86,12 @@ const AppContent = () => {
   return (
     <Routes>
       {/* Public Auth Routes */}
-      <Route path="/admin/login" element={!user ? <AdminLogin /> : <Navigate to="/" replace />} />
-      <Route path="/teacher/login" element={!user ? <TeacherLogin /> : <Navigate to="/" replace />} />
-      <Route path="/teacher/register" element={<Navigate to="/teacher/login" replace />} />
-      <Route path="/student/login" element={!user ? <StudentLogin /> : <Navigate to="/" replace />} />
+      <Route path="/login" element={!user ? <Login /> : <Navigate to="/" replace />} />
+      <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+      <Route path="/teacher/login" element={<Navigate to="/login" replace />} />
+      <Route path="/teacher/register" element={<Navigate to="/login" replace />} />
+      <Route path="/student/login" element={<Navigate to="/login" replace />} />
       <Route path="/student/register" element={!user ? <StudentRegister /> : <Navigate to="/" replace />} />
-      <Route path="/login" element={<Navigate to="/teacher/login" replace />} />
       <Route path="/register" element={<Navigate to="/student/register" replace />} />
 
       {/* Root redirect */}
@@ -110,6 +106,7 @@ const AppContent = () => {
       <Route path="/documents" element={<RoleRoute allowedRoles={['TEACHER']}><Documents /></RoleRoute>} />
       <Route path="/questions" element={<RoleRoute allowedRoles={['TEACHER']}><Questions /></RoleRoute>} />
       <Route path="/quizzes" element={<RoleRoute allowedRoles={['TEACHER']}><Quizzes /></RoleRoute>} />
+      <Route path="/classes" element={<RoleRoute allowedRoles={['TEACHER']}><Classes /></RoleRoute>} />
       <Route path="/question-papers" element={<RoleRoute allowedRoles={['TEACHER']}><QuestionPapers /></RoleRoute>} />
       <Route path="/attempts" element={<RoleRoute allowedRoles={['TEACHER']}><Attempts /></RoleRoute>} />
       <Route path="/analytics" element={<RoleRoute allowedRoles={['TEACHER']}><Analytics /></RoleRoute>} />
@@ -117,7 +114,8 @@ const AppContent = () => {
       {/* Universal Profile Route for all 3 Roles */}
       <Route path="/profile" element={<RoleRoute allowedRoles={['ADMIN', 'TEACHER', 'STUDENT']}><Profile /></RoleRoute>} />
 
-      {/* Shared Admin/Teacher Settings */}
+      {/* Shared Admin/Teacher Settings & Review Queue */}
+      <Route path="/review-queue" element={<RoleRoute allowedRoles={['ADMIN', 'TEACHER']}><ReviewQueue /></RoleRoute>} />
       <Route path="/settings" element={<RoleRoute allowedRoles={['ADMIN', 'TEACHER']}><Settings /></RoleRoute>} />
 
       {/* Student Dashboard */}

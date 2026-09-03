@@ -114,3 +114,50 @@ exports.createTeacher = async (req, res) => {
     res.status(500).json({ error: 'Failed to create teacher account.' });
   }
 };
+
+/**
+ * Retrieve comprehensive Admin System Analytics
+ */
+exports.getSystemAnalytics = async (req, res) => {
+  try {
+    const totalTeachers = await prisma.user.count({ where: { role: 'TEACHER' } });
+    const totalStudents = await prisma.student.count();
+    const totalDocuments = await prisma.document.count();
+    const processedDocs = await prisma.document.count({ where: { status: 'PROCESSED' } });
+    const failedDocs = await prisma.document.count({ where: { status: 'FAILED' } });
+    const totalQuestions = await prisma.question.count();
+    const approvedQuestions = await prisma.question.count({ where: { status: 'APPROVED' } });
+    const totalQuizzes = await prisma.quiz.count();
+    const totalAttempts = await prisma.attempt.count();
+    const completedAttempts = await prisma.attempt.count({ where: { status: 'COMPLETED' } });
+    const passedAttempts = await prisma.attempt.count({ where: { isPassed: true } });
+
+    const passRate = completedAttempts > 0 ? Math.round((passedAttempts / completedAttempts) * 100) : 0;
+    const docSuccessRate = totalDocuments > 0 ? Math.round((processedDocs / totalDocuments) * 100) : 100;
+
+    res.json({
+      teachers: totalTeachers,
+      students: totalStudents,
+      documents: {
+        total: totalDocuments,
+        processed: processedDocs,
+        failed: failedDocs,
+        successRate: docSuccessRate
+      },
+      questions: {
+        total: totalQuestions,
+        approved: approvedQuestions
+      },
+      quizzes: totalQuizzes,
+      attempts: {
+        total: totalAttempts,
+        completed: completedAttempts,
+        passed: passedAttempts,
+        passRate
+      }
+    });
+  } catch (error) {
+    console.error('Get system analytics error:', error);
+    res.status(500).json({ error: 'Failed to calculate system analytics.' });
+  }
+};
