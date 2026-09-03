@@ -66,7 +66,7 @@ const StudentLogin = () => {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-1">
               <label htmlFor="email" className="block text-xs font-semibold text-slate-400 uppercase">
-                Student Email Address
+                Email / Username
               </label>
               <div className="relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -80,7 +80,7 @@ const StudentLogin = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none"
-                  placeholder="e.g. student@school.edu"
+                  placeholder="Enter your email or username"
                 />
               </div>
             </div>
@@ -112,7 +112,7 @@ const StudentLogin = () => {
               className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow transition-colors flex items-center justify-center gap-1.5"
             >
               {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              Access student portal
+              Log In
             </button>
           </form>
 

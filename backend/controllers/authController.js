@@ -225,7 +225,17 @@ exports.getMe = async (req, res) => {
       if (!student) {
         return res.status(404).json({ error: 'Student profile not found.' });
       }
-      return res.json({ user: { ...student, username: student.email, role: 'STUDENT' } });
+      const attemptsCount = await prisma.attempt.count({
+        where: { studentId: req.user.id }
+      });
+      return res.json({ 
+        user: { 
+          ...student, 
+          username: student.email, 
+          role: 'STUDENT',
+          stats: { attemptsCount }
+        } 
+      });
     }
 
     const user = await prisma.user.findUnique({
@@ -235,9 +245,21 @@ exports.getMe = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User profile not found.' });
     }
-    res.json({ user });
+
+    let stats = {};
+    if (user.role === 'ADMIN') {
+      const teachersCount = await prisma.user.count({ where: { role: 'TEACHER' } });
+      const quizzesCount = await prisma.quiz.count();
+      stats = { teachersCount, quizzesCount };
+    } else if (user.role === 'TEACHER') {
+      const docsCount = await prisma.document.count({ where: { userId: user.id } });
+      const quizzesCount = await prisma.quiz.count({ where: { userId: user.id } });
+      stats = { docsCount, quizzesCount };
+    }
+
+    res.json({ user: { ...user, stats } });
   } catch (error) {
     console.error('getMe profile fetch error:', error);
-    res.status(550).json({ error: 'Failed to retrieve profile credentials.' });
+    res.status(500).json({ error: 'Failed to retrieve profile.' });
   }
 };

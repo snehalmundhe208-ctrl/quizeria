@@ -11,7 +11,8 @@ import {
   Settings, 
   LogOut,
   GraduationCap,
-  Users
+  Users,
+  User
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,6 +25,7 @@ const Sidebar = () => {
       return [
         { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
         { name: 'Teachers', path: '/admin/teachers', icon: Users },
+        { name: 'My Profile', path: '/profile', icon: User },
         { name: 'Settings', path: '/settings', icon: Settings },
       ];
     }
@@ -31,6 +33,7 @@ const Sidebar = () => {
       return [
         { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
         { name: 'Join Quiz', path: '/student/join', icon: HelpCircle },
+        { name: 'My Profile', path: '/profile', icon: User },
       ];
     }
     // Teacher/Educator items
@@ -42,6 +45,7 @@ const Sidebar = () => {
       { name: 'Question Papers', path: '/question-papers', icon: Printer },
       { name: 'Attempts', path: '/attempts', icon: FileSpreadsheet },
       { name: 'Analytics', path: '/analytics', icon: BarChart3 },
+      { name: 'My Profile', path: '/profile', icon: User },
       { name: 'Settings', path: '/settings', icon: Settings },
     ];
   };

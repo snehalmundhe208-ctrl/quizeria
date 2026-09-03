@@ -66,7 +66,7 @@ const TeacherLogin = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none"
-                  placeholder="e.g. teacher@school.edu"
+                  placeholder="Enter your email or username"
                 />
               </div>
             </div>
@@ -98,7 +98,7 @@ const TeacherLogin = () => {
               className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow transition-colors flex items-center justify-center gap-1.5"
             >
               {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              Educator Portal login
+              Log In
             </button>
           </form>
 

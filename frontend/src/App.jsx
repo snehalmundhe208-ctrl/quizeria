@@ -23,6 +23,7 @@ import StudentQuizResult from './pages/StudentQuizResult';
 import Attempts from './pages/Attempts';
 import Analytics from './pages/Analytics';
 import StudentJoinQuiz from './pages/StudentJoinQuiz';
+import Profile from './pages/Profile';
 
 const Layout = ({ children }) => {
   return (
@@ -112,6 +113,9 @@ const AppContent = () => {
       <Route path="/question-papers" element={<RoleRoute allowedRoles={['TEACHER']}><QuestionPapers /></RoleRoute>} />
       <Route path="/attempts" element={<RoleRoute allowedRoles={['TEACHER']}><Attempts /></RoleRoute>} />
       <Route path="/analytics" element={<RoleRoute allowedRoles={['TEACHER']}><Analytics /></RoleRoute>} />
+
+      {/* Universal Profile Route for all 3 Roles */}
+      <Route path="/profile" element={<RoleRoute allowedRoles={['ADMIN', 'TEACHER', 'STUDENT']}><Profile /></RoleRoute>} />
 
       {/* Shared Admin/Teacher Settings */}
       <Route path="/settings" element={<RoleRoute allowedRoles={['ADMIN', 'TEACHER']}><Settings /></RoleRoute>} />
