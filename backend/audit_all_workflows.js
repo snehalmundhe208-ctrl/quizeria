@@ -344,7 +344,7 @@ async function runAudit() {
       })
     });
     const createClassJson = await createClassRes.json();
-    const classId = createClassJson.class?.id;
+    const classId = createClassJson.class?.id || createClassJson.id;
     record("Classes & Assignments", "POST /api/classes (Create Class Roster)", createClassRes.ok && !!classId, `Class ID: ${classId}`);
 
     // Enroll Student in Class
@@ -361,7 +361,8 @@ async function runAudit() {
       headers: { Authorization: `Bearer ${teacherToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ quizId, dueDate: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString() })
     });
-    record("Classes & Assignments", "POST /api/classes/:id/assignments (Assign Quiz)", assignRes.ok, `Assignment created for Class`);
+    const assignJson = await assignRes.json();
+    record("Classes & Assignments", "POST /api/classes/:id/assignments (Assign Quiz)", assignRes.ok && !!assignJson.assignment?.id, assignRes.ok ? `Assignment ID: ${assignJson.assignment?.id}` : assignJson.error);
 
     // 9. ADMIN SYSTEM ANALYTICS
     console.log("\n--- 9. TESTING ADMIN SYSTEM ANALYTICS ---");

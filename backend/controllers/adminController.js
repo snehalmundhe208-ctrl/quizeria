@@ -130,7 +130,7 @@ exports.getSystemAnalytics = async (req, res) => {
     const totalQuizzes = await prisma.quiz.count();
     const totalAttempts = await prisma.attempt.count();
     const completedAttempts = await prisma.attempt.count({ where: { status: 'COMPLETED' } });
-    const passedAttempts = await prisma.attempt.count({ where: { isPassed: true } });
+    const passedAttempts = await prisma.attempt.count({ where: { passed: true } });
 
     const passRate = completedAttempts > 0 ? Math.round((passedAttempts / completedAttempts) * 100) : 0;
     const docSuccessRate = totalDocuments > 0 ? Math.round((processedDocs / totalDocuments) * 100) : 100;

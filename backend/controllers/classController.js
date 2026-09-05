@@ -6,7 +6,7 @@ const prisma = require('../utils/prisma');
 exports.getClasses = async (req, res) => {
   try {
     const classes = await prisma.class.findMany({
-      where: { teacherId: req.user.id },
+      where: { userId: req.user.id },
       include: {
         _count: {
           select: {
@@ -38,9 +38,8 @@ exports.createClass = async (req, res) => {
     const newClass = await prisma.class.create({
       data: {
         name,
-        section: section || null,
-        description: description || null,
-        teacherId: req.user.id
+        subject: section || description || null,
+        userId: req.user.id
       },
       include: {
         _count: {
@@ -68,7 +67,7 @@ exports.enrollStudent = async (req, res) => {
     const { studentId } = req.body;
 
     const classRecord = await prisma.class.findFirst({
-      where: { id, teacherId: req.user.id }
+      where: { id, userId: req.user.id }
     });
 
     if (!classRecord) {
@@ -113,7 +112,7 @@ exports.createAssignment = async (req, res) => {
     }
 
     const classRecord = await prisma.class.findFirst({
-      where: { id, teacherId: req.user.id }
+      where: { id, userId: req.user.id }
     });
 
     if (!classRecord) {
@@ -130,9 +129,11 @@ exports.createAssignment = async (req, res) => {
 
     const assignment = await prisma.assignment.create({
       data: {
+        title: quiz.title,
         classId: id,
         quizId,
-        dueDate: dueDate ? new Date(dueDate) : null
+        userId: req.user.id,
+        deadline: dueDate ? new Date(dueDate) : new Date(Date.now() + 7 * 24 * 3600 * 1000)
       },
       include: {
         quiz: { select: { title: true, timeLimit: true } }
