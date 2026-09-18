@@ -19,9 +19,9 @@ StudyForge AI is a multi-tenant education platform designed to turn academic lec
 Create a `.env` file inside the `backend/` folder:
 ```env
 PORT=5000
-DATABASE_URL="postgresql://postgres:postgres123@localhost:5432/studyforge?schema=public"
-JWT_SECRET="c6d1cf9c9e5e783cb2ef8da38d5db32501a3cfb4eb4a9bb5debc89ba6e8c7db3"
-GEMINI_API_KEY="AIzaSyYourGeminiApiKeyHere"
+DATABASE_URL="postgresql://YOUR_DB_USER:YOUR_DB_PASSWORD@localhost:5432/quizera?schema=public"
+JWT_SECRET="your_jwt_secret_key_here"
+GEMINI_API_KEY="your_gemini_api_key_here"
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
 ```
