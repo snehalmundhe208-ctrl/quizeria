@@ -398,9 +398,45 @@ const StudentQuizResult = () => {
                               <span className="text-slate-500 uppercase font-semibold text-[10px]">Reference Explanation</span>
                               <p className="text-slate-400 leading-relaxed text-[11px]">{ans.explanation}</p>
                             </div>
+                          )}
+
+                          {!ans.isCorrect && !isShort && (
+                            <button
+                              onClick={async () => {
+                                setAiModalQuestion(ans);
+                                setAiExplainLoading(true);
+                                setAiExplainReply('');
+                                try {
+                                  const res = await fetch('/api/practice/explain-mistake', {
+                                    method: 'POST',
+                                    headers: {
+                                      'Authorization': `Bearer ${token}`,
+                                      'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                      questionId: ans.questionId,
+                                      studentAnswer: ans.studentAnswer
+                                    })
+                                  });
+                                  const json = await res.json();
+                                  if (!res.ok) throw new Error(json.error || 'Failed to explain mistake.');
+                                  setAiExplainReply(json.reply);
+                                } catch (err) {
+                                  setAiExplainReply(`Could not fetch explanation: ${err.message}`);
+                                } finally {
+                                  setAiExplainLoading(false);
+                                }
+                              }}
+                              className="self-start sm:self-auto flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold px-3 py-1.5 bg-indigo-950/40 border border-indigo-900/40 rounded-lg transition hover:bg-indigo-900/30 shrink-0"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Ask AI why I got this wrong</span>
+                            </button>
+                          )}
+                        </div>
 
                         {/* Answers reveal & Explanations */}
-                        {quiz.revealAnswers && (
+                        {result?.quiz?.revealAnswersAfterSubmission && (
                           <div className="space-y-3 pt-3 border-t border-slate-800/40 bg-slate-950/20 p-3 rounded-xl">
                             {!isShort && (
                               <div>
@@ -413,13 +449,6 @@ const StudentQuizResult = () => {
                               <div>
                                 <span className="text-[10px] text-slate-500 uppercase font-semibold">Grounded Reference Keywords</span>
                                 <p className="text-indigo-400 font-mono mt-0.5">{ans.correctAnswer}</p>
-                              </div>
-                            )}
-
-                            {ans.explanation && (
-                              <div>
-                                <span className="text-[10px] text-slate-500 uppercase font-semibold">Explanation Details</span>
-                                <p className="text-slate-400 leading-relaxed mt-0.5">{ans.explanation}</p>
                               </div>
                             )}
                           </div>
