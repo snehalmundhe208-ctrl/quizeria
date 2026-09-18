@@ -7,5 +7,6 @@ router.get('/', authMiddleware, teacherMiddleware, classController.getClasses);
 router.post('/', authMiddleware, teacherMiddleware, classController.createClass);
 router.post('/:id/students', authMiddleware, teacherMiddleware, classController.enrollStudent);
 router.post('/:id/assignments', authMiddleware, teacherMiddleware, classController.createAssignment);
+router.post('/:id/generate-insights', authMiddleware, teacherMiddleware, classController.generateClassInsights);
 
 module.exports = router;

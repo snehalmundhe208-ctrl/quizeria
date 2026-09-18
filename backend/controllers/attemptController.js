@@ -113,7 +113,7 @@ const finalizeAndScoreAttempt = async (attemptId, submitTimeOverride = null) => 
     });
   }
 
-  // Write evaluated answers to database
+  // Write evaluated answers to database & update SpacedReview / Auto-Difficulty Recalibration
   await prisma.$transaction(async (tx) => {
     for (const item of evaluationUpdates) {
       await tx.attemptAnswer.upsert({
@@ -137,6 +137,63 @@ const finalizeAndScoreAttempt = async (attemptId, submitTimeOverride = null) => 
           reviewed: item.reviewed
         }
       });
+
+      // FEATURE 2: Spaced-Repetition Queue Population on Wrong Answer
+      if (item.isCorrect === false && attempt.studentId) {
+        const nextReviewAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1-day initial interval
+        await tx.spacedReview.upsert({
+          where: {
+            studentId_questionId: {
+              studentId: attempt.studentId,
+              questionId: item.questionId
+            }
+          },
+          update: {
+            intervalStep: 1,
+            lastFailedAt: new Date(),
+            nextReviewAt,
+            status: 'DUE'
+          },
+          create: {
+            studentId: attempt.studentId,
+            questionId: item.questionId,
+            intervalStep: 1,
+            nextReviewAt,
+            status: 'DUE'
+          }
+        });
+      }
+
+      // FEATURE 5: Auto-Difficulty Recalibration Update
+      if (item.isCorrect !== null) {
+        const currentQ = await tx.question.findUnique({
+          where: { id: item.questionId },
+          select: { totalAttemptsCount: true, correctCount: true }
+        });
+
+        if (currentQ) {
+          const newTotal = currentQ.totalAttemptsCount + 1;
+          const newCorrect = currentQ.correctCount + (item.isCorrect ? 1 : 0);
+          const accuracy = Math.round((newCorrect / newTotal) * 100);
+
+          let observedDiff = null;
+          if (newTotal >= 10) {
+            if (accuracy > 75) observedDiff = 'EASY';
+            else if (accuracy >= 45) observedDiff = 'MEDIUM';
+            else observedDiff = 'HARD';
+          }
+
+          await tx.question.update({
+            where: { id: item.questionId },
+            data: {
+              totalAttemptsCount: newTotal,
+              correctCount: newCorrect,
+              observedAccuracy: accuracy,
+              observedDifficulty: observedDiff
+            }
+          });
+        }
+      }
     }
   });
 

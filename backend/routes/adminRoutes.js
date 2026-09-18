@@ -8,4 +8,8 @@ router.post('/teachers', authMiddleware, adminMiddleware, adminController.create
 router.put('/teachers/:id/toggle', authMiddleware, adminMiddleware, adminController.toggleTeacherStatus);
 router.get('/analytics', authMiddleware, adminMiddleware, adminController.getSystemAnalytics);
 
+// Features 8 & 9: Admin AI Monitoring & Teacher Engagement Leaderboard
+router.get('/ai-usage', authMiddleware, adminMiddleware, adminController.getAiUsageMonitoring);
+router.get('/teacher-engagement', authMiddleware, adminMiddleware, adminController.getTeacherEngagementLeaderboard);
+
 module.exports = router;

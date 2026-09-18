@@ -13,6 +13,11 @@ router.get('/:id/source', authMiddleware, teacherMiddleware, questionController.
 router.put('/:id', authMiddleware, teacherMiddleware, questionController.updateQuestion);
 router.delete('/:id', authMiddleware, teacherMiddleware, questionController.deleteQuestion);
 
+// Feature 7: Collaborative Question Sharing
+router.get('/shared-bank', authMiddleware, teacherMiddleware, questionController.getSharedQuestionBank);
+router.patch('/:id/share', authMiddleware, teacherMiddleware, questionController.toggleShareQuestion);
+router.post('/:id/import', authMiddleware, teacherMiddleware, questionController.importSharedQuestion);
+
 // This matches the document specific sub-route
 router.post('/generate/:id', authMiddleware, teacherMiddleware, questionController.generateAIQuestions);
 

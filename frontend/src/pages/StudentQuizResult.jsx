@@ -31,6 +31,11 @@ const StudentQuizResult = () => {
   // Accordion state to collapse/expand single question reviews
   const [expandedAnswers, setExpandedAnswers] = useState(new Set());
 
+  // Feature 3: AI Explain Mistake Modal state
+  const [aiModalQuestion, setAiModalQuestion] = useState(null);
+  const [aiExplainLoading, setAiExplainLoading] = useState(false);
+  const [aiExplainReply, setAiExplainReply] = useState('');
+
   useEffect(() => {
     if (!token) {
       navigate('/login');
@@ -378,15 +383,21 @@ const StudentQuizResult = () => {
 
                         {/* Written details for short answers */}
                         {isShort && (
-                          <div className="space-y-2">
-                            <div>
-                              <span className="text-slate-500 uppercase font-semibold">Your Written Response</span>
-                              <p className="text-slate-300 bg-slate-950 p-2.5 rounded-lg border border-slate-800 leading-relaxed font-mono mt-1">
-                                {ans.studentAnswer || 'Unanswered'}
-                              </p>
-                            </div>
+                          <div className="space-y-1">
+                            <span className="text-slate-500 uppercase font-semibold">Your Written Answer</span>
+                            <p className="p-3 bg-slate-950/60 border border-slate-800 rounded-lg text-slate-300">
+                              {ans.studentAnswer || 'No response recorded.'}
+                            </p>
                           </div>
                         )}
+
+                        {/* Explanation & AI Explain Mistake button */}
+                        <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          {ans.explanation && (
+                            <div className="flex-1 space-y-1">
+                              <span className="text-slate-500 uppercase font-semibold text-[10px]">Reference Explanation</span>
+                              <p className="text-slate-400 leading-relaxed text-[11px]">{ans.explanation}</p>
+                            </div>
 
                         {/* Answers reveal & Explanations */}
                         {quiz.revealAnswers && (

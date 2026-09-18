@@ -485,3 +485,128 @@ exports.rejectQuestions = async (req, res) => {
     res.status(500).json({ error: 'Failed to reject questions.' });
   }
 };
+
+/**
+ * FEATURE 7: Toggle Question Share Status (Mark as Shared for other educators)
+ */
+exports.toggleShareQuestion = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const question = await prisma.question.findUnique({
+      where: { id },
+      include: { document: { select: { userId: true } } }
+    });
+
+    if (!question) {
+      return res.status(404).json({ error: 'Question not found.' });
+    }
+
+    if (question.document && question.document.userId !== req.user.id && question.sharedByUserId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized to toggle share status for this question.' });
+    }
+
+    const updated = await prisma.question.update({
+      where: { id },
+      data: {
+        isShared: !question.isShared,
+        sharedByUserId: req.user.id
+      }
+    });
+
+    res.json({
+      message: `Question ${updated.isShared ? 'shared with Collaborative Bank' : 'unshared'}.`,
+      isShared: updated.isShared
+    });
+  } catch (error) {
+    console.error('Toggle share question error:', error);
+    res.status(500).json({ error: 'Failed to toggle question share status.' });
+  }
+};
+
+/**
+ * FEATURE 7: Browse Shared Question Bank (Questions shared by peer teachers)
+ */
+exports.getSharedQuestionBank = async (req, res) => {
+  try {
+    const sharedQuestions = await prisma.question.findMany({
+      where: {
+        isShared: true,
+        status: 'APPROVED'
+      },
+      include: {
+        document: { select: { name: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    });
+
+    // Attach teacher info if available
+    const userIds = Array.from(new Set(sharedQuestions.map(q => q.sharedByUserId || q.document?.userId).filter(Boolean)));
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, username: true }
+    });
+
+    const userMap = {};
+    for (const u of users) {
+      userMap[u.id] = u.username;
+    }
+
+    const formatted = sharedQuestions.map(q => ({
+      ...q,
+      sharedByUsername: userMap[q.sharedByUserId] || (q.document ? userMap[q.document.userId] : 'Peer Educator')
+    }));
+
+    res.json({ sharedQuestions: formatted });
+  } catch (error) {
+    console.error('Get shared question bank error:', error);
+    res.status(500).json({ error: 'Failed to retrieve shared question bank.' });
+  }
+};
+
+/**
+ * FEATURE 7: Import / Clone a Shared Question into Teacher's own Question Bank
+ */
+exports.importSharedQuestion = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const originalQuestion = await prisma.question.findUnique({
+      where: { id }
+    });
+
+    if (!originalQuestion || !originalQuestion.isShared) {
+      return res.status(404).json({ error: 'Shared question not found or no longer available.' });
+    }
+
+    // Clone into teacher's bank (with documentId = null since teacher doesn't own original doc)
+    const cloned = await prisma.question.create({
+      data: {
+        documentId: null, // Nullable specifically for imported shared questions
+        chunkId: null,
+        type: originalQuestion.type,
+        questionText: originalQuestion.questionText,
+        options: originalQuestion.options,
+        correctAnswer: originalQuestion.correctAnswer,
+        explanation: originalQuestion.explanation,
+        difficulty: originalQuestion.difficulty,
+        topic: originalQuestion.topic,
+        sourcePage: originalQuestion.sourcePage,
+        sourceSection: originalQuestion.sourceSection,
+        status: 'APPROVED',
+        qualityScore: originalQuestion.qualityScore,
+        isShared: false,
+        sharedByUserId: req.user.id
+      }
+    });
+
+    res.status(201).json({
+      message: 'Shared question imported into your Question Bank successfully.',
+      question: cloned
+    });
+  } catch (error) {
+    console.error('Import shared question error:', error);
+    res.status(500).json({ error: 'Failed to import shared question.' });
+  }
+};

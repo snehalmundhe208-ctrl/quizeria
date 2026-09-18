@@ -62,6 +62,12 @@ enum QuestionStatus {
   REJECTED
 }
 
+enum SpacedReviewStatus {
+  DUE
+  REVIEWED
+  GRADUATED
+}
+
 model User {
   id             String          @id @default(uuid())
   username       String          @unique
@@ -75,6 +81,7 @@ model User {
   classes        Class[]
   assignments    Assignment[]
   activityLogs   ActivityLog[]
+  aiUsageLogs    AiUsageLog[]
 }
 
 model Document {
@@ -109,8 +116,8 @@ model DocumentChunk {
 
 model Question {
   id                   String                 @id @default(uuid())
-  documentId           String
-  document             Document               @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId           String?                // Nullable so cloned/imported shared questions don't require an owned document
+  document             Document?              @relation(fields: [documentId], references: [id], onDelete: Cascade)
   chunkId              String?
   chunk                DocumentChunk?         @relation(fields: [chunkId], references: [id], onDelete: SetNull)
   type                 QuestionType
@@ -125,13 +132,26 @@ model Question {
   status               QuestionStatus         @default(APPROVED)
   qualityScore         Int?
   qualityWarnings      Json?
+  
+  // Feature 5: Auto-Difficulty Recalibration
+  observedDifficulty   Difficulty?
+  totalAttemptsCount   Int                    @default(0)
+  correctCount         Int                    @default(0)
+  observedAccuracy     Float?
+  
+  // Feature 7: Collaborative Question Bank Sharing
+  isShared             Boolean                @default(false)
+  sharedByUserId       String?
+  
   createdAt            DateTime               @default(now())
   quizQuestions        QuizQuestion[]
   attemptAnswers       AttemptAnswer[]
   paperQuestions       QuestionPaperQuestion[]
+  spacedReviews        SpacedReview[]
 
   @@index([documentId])
   @@index([topic])
+  @@index([isShared])
 }
 
 model Quiz {
@@ -184,15 +204,18 @@ model ShareLink {
 }
 
 model Student {
-  id           String         @id @default(uuid())
-  name         String
-  email        String         @unique
-  passwordHash String
-  studentId    String?        @unique // optional roll number or student ID
-  createdAt    DateTime       @default(now())
-  attempts     Attempt[]
-  classes      ClassStudent[]
-  achievements Achievement[]
+  id                 String         @id @default(uuid())
+  name               String
+  email              String         @unique
+  passwordHash       String
+  studentId          String?        @unique // optional roll number or student ID
+  isLeaderboardOptIn Boolean        @default(false) // Feature 4: Opt-In per class
+  createdAt          DateTime       @default(now())
+  attempts           Attempt[]
+  classes            ClassStudent[]
+  achievements       Achievement[]
+  spacedReviews      SpacedReview[]
+  aiUsageLogs        AiUsageLog[]
 }
 
 model Attempt {
@@ -264,10 +287,11 @@ model Class {
   id          String         @id @default(uuid())
   name        String
   subject     String?
-  code        String         @unique @default(uuid())
+  code        String         @unique // Short 6-character human-friendly code (e.g. CS101A)
   createdAt   DateTime       @default(now())
   userId      String
   user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiInsights  Json?          // Feature 6: Stores class performance summary & teaching recommendations
   students    ClassStudent[]
   assignments Assignment[]
 }
@@ -315,12 +339,48 @@ model Achievement {
   unlockedAt  DateTime @default(now())
 }
 
+model SpacedReview {
+  id            String             @id @default(uuid())
+  studentId     String
+  student       Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  intervalStep  Int                @default(1) // 1 = 1-Day, 2 = 3-Day, 3 = 7-Day
+  lastFailedAt  DateTime           @default(now())
+  nextReviewAt  DateTime
+  status        SpacedReviewStatus @default(DUE)
+  createdAt     DateTime           @default(now())
+
+  @@unique([studentId, questionId])
+  @@index([studentId, status, nextReviewAt])
+}
+
+model AiUsageLog {
+  id               String   @id @default(uuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId        String?
+  student          Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  featureType      String   // QUESTION_GEN | INSIGHTS | CHAT | CLASS_INSIGHTS | EXPLAIN_MISTAKE
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  estimatedCost    Float    @default(0.0)
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([studentId])
+  @@index([createdAt])
+}
+
 model Notification {
   id            String   @id @default(uuid())
   recipientId   String
   recipientType String   // USER or STUDENT
   title         String
   message       String
+  link          String?  // Navigation target URL
   read          Boolean  @default(false)
   createdAt     DateTime @default(now())
+
+  @@index([recipientId, read])
 }

@@ -161,3 +161,127 @@ exports.getSystemAnalytics = async (req, res) => {
     res.status(500).json({ error: 'Failed to calculate system analytics.' });
   }
 };
+
+/**
+ * FEATURE 8: AI Usage & API Cost Monitoring
+ * Tracks AI calls, token usage, estimated costs by teacher & feature type
+ */
+exports.getAiUsageMonitoring = async (req, res) => {
+  try {
+    const logs = await prisma.aiUsageLog.findMany({
+      include: {
+        user: { select: { username: true, role: true } },
+        student: { select: { name: true, email: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200
+    });
+
+    const totalCalls = logs.length;
+    const totalPromptTokens = logs.reduce((sum, l) => sum + l.promptTokens, 0);
+    const totalCompletionTokens = logs.reduce((sum, l) => sum + l.completionTokens, 0);
+    const totalEstimatedCost = logs.reduce((sum, l) => sum + l.estimatedCost, 0);
+
+    // Group by feature type
+    const featureMap = {};
+    for (const l of logs) {
+      const feat = l.featureType || 'OTHER';
+      if (!featureMap[feat]) {
+        featureMap[feat] = { featureType: feat, count: 0, cost: 0 };
+      }
+      featureMap[feat].count++;
+      featureMap[feat].cost += l.estimatedCost;
+    }
+
+    // Group by teacher / user
+    const userMap = {};
+    for (const l of logs) {
+      const identifier = l.user ? l.user.username : (l.student ? `Student: ${l.student.name}` : 'System/Anonymous');
+      if (!userMap[identifier]) {
+        userMap[identifier] = { name: identifier, calls: 0, cost: 0 };
+      }
+      userMap[identifier].calls++;
+      userMap[identifier].cost += l.estimatedCost;
+    }
+
+    res.json({
+      summary: {
+        totalCalls,
+        totalPromptTokens,
+        totalCompletionTokens,
+        totalEstimatedCost: parseFloat(totalEstimatedCost.toFixed(4))
+      },
+      byFeature: Object.values(featureMap),
+      byUser: Object.values(userMap).sort((a, b) => b.calls - a.calls),
+      recentLogs: logs.slice(0, 25)
+    });
+  } catch (error) {
+    console.error('Get AI usage monitoring error:', error);
+    res.status(500).json({ error: 'Failed to retrieve AI usage metrics.' });
+  }
+};
+
+/**
+ * FEATURE 9: Teacher Engagement Leaderboard
+ * Ranks educators by activity (documents uploaded, quizzes published, questions approved, classes created)
+ */
+exports.getTeacherEngagementLeaderboard = async (req, res) => {
+  try {
+    const teachers = await prisma.user.findMany({
+      where: { role: 'TEACHER' },
+      include: {
+        documents: { select: { id: true, status: true } },
+        quizzes: { select: { id: true, status: true } },
+        classes: { select: { id: true } }
+      }
+    });
+
+    const engagementData = [];
+
+    for (const t of teachers) {
+      const documentsUploaded = t.documents.length;
+      const quizzesPublished = t.quizzes.filter(q => q.status === 'PUBLISHED').length;
+      const classesCreated = t.classes.length;
+
+      // Count approved questions generated from teacher's documents
+      const docIds = t.documents.map(d => d.id);
+      let questionsApproved = 0;
+      if (docIds.length > 0) {
+        questionsApproved = await prisma.question.count({
+          where: {
+            documentId: { in: docIds },
+            status: 'APPROVED'
+          }
+        });
+      }
+
+      // Compute weighted engagement score
+      const engagementScore = (documentsUploaded * 10) + (quizzesPublished * 15) + (questionsApproved * 2) + (classesCreated * 12);
+
+      engagementData.push({
+        id: t.id,
+        username: t.username,
+        isActive: t.isActive,
+        createdAt: t.createdAt,
+        documentsUploaded,
+        quizzesPublished,
+        questionsApproved,
+        classesCreated,
+        engagementScore
+      });
+    }
+
+    // Sort descending by engagement score
+    engagementData.sort((a, b) => b.engagementScore - a.engagementScore);
+
+    const rankedTeachers = engagementData.map((t, idx) => ({
+      rank: idx + 1,
+      ...t
+    }));
+
+    res.json({ teachers: rankedTeachers });
+  } catch (error) {
+    console.error('Get teacher engagement leaderboard error:', error);
+    res.status(500).json({ error: 'Failed to retrieve teacher engagement leaderboard.' });
+  }
+};

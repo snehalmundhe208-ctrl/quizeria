@@ -40,6 +40,8 @@ const publicApiLimiter = rateLimit({
 // Apply rate limiter specifically on public endpoints
 app.use('/api/public', publicApiLimiter);
 
+const notificationRoutes = require('./routes/notificationRoutes');
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -52,6 +54,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/practice', practiceRoutes);
 app.use('/api/classes', classRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Root test endpoint
 app.get('/', (req, res) => {
